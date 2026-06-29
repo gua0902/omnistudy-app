@@ -2,7 +2,7 @@
   "name": "OmniStudy 智慧學習助手",
   "short_name": "OmniStudy",
   "description": "具備學科筆記、學習月曆、課後待辦與問答解題的智慧學習協作平台",
-  "start_url": "./index.html",
+  "start_url": "/",
   "display": "standalone",
   "background_color": "#fcf9fc",
   "theme_color": "#fcf9fc",
