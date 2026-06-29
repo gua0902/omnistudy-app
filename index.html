@@ -50,17 +50,6 @@
         </div>
 
       </div>
-      <!-- Theme Settings -->
-      <div class="theme-settings-wrapper">
-        <button id="btn-theme-settings" class="btn-icon-header" title="切換主題">
-          <i data-lucide="palette"></i>
-        </button>
-        <div id="theme-dropdown" class="theme-dropdown" style="display: none;">
-          <div class="theme-option active-theme" data-theme="default">🍬 馬卡龍（預設）</div>
-          <div class="theme-option" data-theme="threads-light">☀️ Threads 白</div>
-          <div class="theme-option" data-theme="threads-dark">🌙 Threads 黑</div>
-        </div>
-      </div>
     </div>
     
     <!-- Tab Navigation -->
@@ -1065,11 +1054,7 @@
       });
       
       // Set the body class to trigger dynamic theme colors in style.css
-      if (window.applyBodyClasses) {
-        window.applyBodyClasses(targetTab);
-      } else {
-        document.body.className = `theme-${targetTab}`;
-      }
+      document.body.className = `theme-${targetTab}`;
     }
 
     tabButtons.forEach(button => {

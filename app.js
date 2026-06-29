@@ -26,8 +26,7 @@ let currentQuizAnswers = [];
 let activeTodoSubFilter = 'all';
 let activeQaSubFilter = 'all';
 
-// Theme state
-let currentGlobalTheme = localStorage.getItem('omnistudy-theme') || 'default';
+
 
 // Notification state
 let lastKnownQuizIds = JSON.parse(localStorage.getItem('omnistudy-known-quiz-ids') || '[]');
@@ -470,8 +469,8 @@ window.addEventListener('DOMContentLoaded', async () => {
             .catch(err => console.error('Service Worker registration failed:', err));
     }
 
-    // 1.1. Apply saved theme + default tab theme
-    applyBodyClasses('dashboard');
+    // 1.1. Set default body theme on startup (Notes is active tab by default)
+    document.body.className = 'theme-dashboard';
 
     // 1.2. Inject Material You Tab Accent Theme rules
     injectThemeStyles();
@@ -500,9 +499,6 @@ window.addEventListener('DOMContentLoaded', async () => {
 
     // 1.10. Initialize pull-to-refresh
     initPullToRefresh();
-
-    // 1.11. Initialize theme settings UI
-    initThemeSettings();
 
     // 1.12. Request notification permission
     requestNotificationPermission();
@@ -655,7 +651,7 @@ function bindEvents() {
         const activeTab = document.querySelector('.tab-btn.active');
         if (activeTab) {
             const target = activeTab.getAttribute('data-tab');
-            applyBodyClasses(target);
+            document.body.className = `theme-${target}`;
             await loadDataForView(`panel-${target}`);
         }
     });
@@ -732,7 +728,7 @@ function bindEvents() {
             const targetTab = btn.getAttribute('data-tab');
             
             // Set dynamic theme class
-            applyBodyClasses(targetTab);
+            document.body.className = `theme-${targetTab}`;
             
             // Switch tabs explicitly and synchronize active class on both desktop and mobile tab buttons
             document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
@@ -1215,12 +1211,18 @@ document.getElementById('btn-save-note')?.addEventListener('click', async () => 
         imageUrl = await uploadImage(fileInput, urlInput);
     }
     
+    let creatorId = activeUser ? activeUser.id : null;
+    if (noteId) {
+        const item = currentNotes.find(x => x.id === noteId);
+        if (item) creatorId = item.user_id;
+    }
+
     const payload = {
         subject,
         title,
         content,
         image_url: imageUrl,
-        user_id: activeUser ? activeUser.id : null,
+        user_id: creatorId,
         updated_at: new Date().toISOString()
     };
     if (noteId) {
@@ -2011,7 +2013,7 @@ async function openDetailModal(type, id) {
         document.getElementById('btn-delete-note').dataset.id = item.id;
         
         const isNoteOwner = activeUser && item.user_id === activeUser.id;
-        document.getElementById('btn-edit-note').style.display = isNoteOwner ? '' : 'none';
+        document.getElementById('btn-edit-note').style.display = activeUser ? '' : 'none';
         document.getElementById('btn-delete-note').style.display = isNoteOwner ? '' : 'none';
 
         // Clear comment input and load comments
@@ -2607,74 +2609,7 @@ function initPullToRefresh() {
     });
 }
 
-// =========================================================================
-// Theme Management & applyBodyClasses
-// =========================================================================
-function applyBodyClasses(targetTab) {
-    let classes = [`theme-${targetTab}`];
-    if (currentGlobalTheme !== 'default') {
-        classes.push(currentGlobalTheme);
-    }
-    document.body.className = classes.join(' ');
-}
-window.applyBodyClasses = applyBodyClasses;
 
-function initThemeSettings() {
-    const btn = document.getElementById('btn-theme-settings');
-    const dropdown = document.getElementById('theme-dropdown');
-    
-    if (btn && dropdown) {
-        btn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            const isHidden = dropdown.style.display === 'none';
-            dropdown.style.display = isHidden ? 'block' : 'none';
-        });
-
-        // Close dropdown when clicking outside
-        document.addEventListener('click', () => {
-            dropdown.style.display = 'none';
-        });
-
-        dropdown.addEventListener('click', (e) => {
-            e.stopPropagation();
-        });
-
-        // Setup theme options click listeners
-        const options = dropdown.querySelectorAll('.theme-option');
-        options.forEach(opt => {
-            opt.addEventListener('click', () => {
-                const selectedTheme = opt.getAttribute('data-theme');
-                applyTheme(selectedTheme);
-                dropdown.style.display = 'none';
-            });
-        });
-    }
-
-    // Apply the saved global theme visual active state in the dropdown list
-    applyTheme(currentGlobalTheme);
-}
-
-function applyTheme(themeName) {
-    currentGlobalTheme = themeName;
-    localStorage.setItem('omnistudy-theme', themeName);
-
-    // Update body classes for the active tab
-    const activeTab = document.querySelector('.tab-btn.active');
-    const activeTabName = activeTab ? activeTab.getAttribute('data-tab') : 'dashboard';
-    applyBodyClasses(activeTabName);
-
-    // Update active visual class in dropdown
-    const dropdown = document.getElementById('theme-dropdown');
-    if (dropdown) {
-        dropdown.querySelectorAll('.theme-option').forEach(opt => {
-            if (opt.getAttribute('data-theme') === themeName) {
-                opt.classList.add('active-theme');
-            } else {
-                opt.classList.remove('active-theme');
-            }
-        });
-    }
-}
 
 // =========================================================================
 // Browser Notification API Helpers
