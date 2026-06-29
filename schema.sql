@@ -150,3 +150,22 @@ ALTER TABLE public.quiz_answers ENABLE ROW LEVEL SECURITY;
 -- 建立 RLS 政策 (匿名允許全部讀寫)
 CREATE POLICY "Allow anon read/write quiz_questions" ON public.quiz_questions FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Allow anon read/write quiz_answers" ON public.quiz_answers FOR ALL USING (true) WITH CHECK (true);
+
+-- =========================================================================
+-- 9. 建立學習筆記留言資料表 (note_comments)
+-- =========================================================================
+
+CREATE TABLE IF NOT EXISTS public.note_comments (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    note_id UUID NOT NULL REFERENCES public.notes(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE SET NULL,
+    content TEXT NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+-- 啟用 RLS
+ALTER TABLE public.note_comments ENABLE ROW LEVEL SECURITY;
+
+-- 建立 RLS 政策 (匿名允許全部讀寫)
+CREATE POLICY "Allow anon read/write note_comments" ON public.note_comments FOR ALL USING (true) WITH CHECK (true);
+

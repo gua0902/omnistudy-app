@@ -23,9 +23,16 @@ let currentQuizzes = [];
 let formQuizOptions = ['', ''];
 let formQuizCorrectIndex = 0;
 let currentQuizAnswers = [];
-let calendarViewMode = 'month';
 let activeTodoSubFilter = 'all';
 let activeQaSubFilter = 'all';
+
+// Theme state
+let currentGlobalTheme = localStorage.getItem('omnistudy-theme') || 'default';
+
+// Notification state
+let lastKnownQuizIds = JSON.parse(localStorage.getItem('omnistudy-known-quiz-ids') || '[]');
+let lastKnownQuestionIds = JSON.parse(localStorage.getItem('omnistudy-known-question-ids') || '[]');
+let lastKnownAnsweredIds = JSON.parse(localStorage.getItem('omnistudy-known-answered-ids') || '[]');
 
 function getLocalDateString(date) {
     const y = date.getFullYear();
@@ -34,18 +41,7 @@ function getLocalDateString(date) {
     return `${y}-${m}-${d}`;
 }
 
-function isDateInCurrentWeek(dateStr) {
-    if (!dateStr) return false;
-    const d = new Date(dateStr);
-    const today = new Date();
-    const sunday = new Date(today);
-    sunday.setDate(today.getDate() - today.getDay());
-    sunday.setHours(0, 0, 0, 0);
-    const saturday = new Date(sunday);
-    saturday.setDate(sunday.getDate() + 6);
-    saturday.setHours(23, 59, 59, 999);
-    return d >= sunday && d <= saturday;
-}
+
 
 let activeQuestionId = null;
 
@@ -227,6 +223,17 @@ async function fetchQuizzes() {
             .select('*')
             .order('created_at', { ascending: false });
         if (error) throw error;
+
+        // Check for new quizzes
+        if (lastKnownQuizIds.length > 0) {
+            const newQuizzes = (data || []).filter(q => !lastKnownQuizIds.includes(q.id) && (!activeUser || q.user_id !== activeUser.id));
+            if (newQuizzes.length > 0) {
+                sendBrowserNotification("OmniStudy 提醒", "📝 有新的出題！");
+            }
+        }
+        lastKnownQuizIds = (data || []).map(q => q.id);
+        localStorage.setItem('omnistudy-known-quiz-ids', JSON.stringify(lastKnownQuizIds));
+
         currentQuizzes = data || [];
     } catch (err) {
         console.error("Error fetching quizzes:", err);
@@ -463,8 +470,8 @@ window.addEventListener('DOMContentLoaded', async () => {
             .catch(err => console.error('Service Worker registration failed:', err));
     }
 
-    // 1.1. Set default body theme on startup (Notes is active tab by default)
-    document.body.className = 'theme-dashboard';
+    // 1.1. Apply saved theme + default tab theme
+    applyBodyClasses('dashboard');
 
     // 1.2. Inject Material You Tab Accent Theme rules
     injectThemeStyles();
@@ -493,6 +500,12 @@ window.addEventListener('DOMContentLoaded', async () => {
 
     // 1.10. Initialize pull-to-refresh
     initPullToRefresh();
+
+    // 1.11. Initialize theme settings UI
+    initThemeSettings();
+
+    // 1.12. Request notification permission
+    requestNotificationPermission();
 });
 
 // =========================================================================
@@ -642,7 +655,7 @@ function bindEvents() {
         const activeTab = document.querySelector('.tab-btn.active');
         if (activeTab) {
             const target = activeTab.getAttribute('data-tab');
-            document.body.className = `theme-${target}`;
+            applyBodyClasses(target);
             await loadDataForView(`panel-${target}`);
         }
     });
@@ -719,7 +732,7 @@ function bindEvents() {
             const targetTab = btn.getAttribute('data-tab');
             
             // Set dynamic theme class
-            document.body.className = `theme-${targetTab}`;
+            applyBodyClasses(targetTab);
             
             // Switch tabs explicitly and synchronize active class on both desktop and mobile tab buttons
             document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
@@ -793,32 +806,7 @@ function bindEvents() {
     // Search input observers
     document.getElementById('search-notes')?.addEventListener('input', renderNotes);
     document.getElementById('search-calendar')?.addEventListener('input', renderEvents);
-    // Calendar Month/Week view toggles
-    document.getElementById('btn-view-month')?.addEventListener('click', () => {
-        calendarViewMode = 'month';
-        document.getElementById('btn-view-month').classList.add('active-view');
-        document.getElementById('btn-view-week').classList.remove('active-view');
-        animateCalendarRender();
-    });
-    document.getElementById('btn-view-week')?.addEventListener('click', () => {
-        calendarViewMode = 'week';
-        document.getElementById('btn-view-week').classList.add('active-view');
-        document.getElementById('btn-view-month').classList.remove('active-view');
-        animateCalendarRender();
-    });
 
-    function animateCalendarRender() {
-        const grid = document.getElementById('calendar-days');
-        if (grid) {
-            grid.classList.add('fade-out');
-            setTimeout(() => {
-                renderMiniCalendar();
-                grid.classList.remove('fade-out');
-            }, 200);
-        } else {
-            renderMiniCalendar();
-        }
-    }
 
     document.getElementById('search-todo')?.addEventListener('input', renderTodos);
     // Todo Sub-filters
@@ -1289,78 +1277,19 @@ function renderMiniCalendar() {
     if (!daysGrid) return;
     daysGrid.innerHTML = '';
     
-    if (calendarViewMode === 'month') {
-        const firstDayIndex = new Date(year, month, 1).getDay();
-        const lastDay = new Date(year, month + 1, 0).getDate();
-        const prevLastDay = new Date(year, month, 0).getDate();
-        
-        for (let x = firstDayIndex; x > 0; x--) {
-            const dayDiv = document.createElement('div');
-            dayDiv.className = 'calendar-day other-month';
-            dayDiv.innerText = prevLastDay - x + 1;
-            daysGrid.appendChild(dayDiv);
-        }
-        
-        for (let i = 1; i <= lastDay; i++) {
-            renderDayDiv(year, month, i, daysGrid);
-        }
-    } else {
-        const startOfWeek = new Date(calendarSelectedDate);
-        startOfWeek.setDate(calendarSelectedDate.getDate() - calendarSelectedDate.getDay());
-        
-        for (let i = 0; i < 7; i++) {
-            const currentDay = new Date(startOfWeek);
-            currentDay.setDate(startOfWeek.getDate() + i);
-            
-            const dayDiv = document.createElement('div');
-            dayDiv.className = 'calendar-day';
-            if (currentDay.getMonth() !== month) {
-                dayDiv.classList.add('other-month');
-            }
-            dayDiv.innerText = currentDay.getDate();
-            
-            const today = new Date();
-            if (currentDay.getDate() === today.getDate() && currentDay.getMonth() === today.getMonth() && currentDay.getFullYear() === today.getFullYear()) {
-                dayDiv.classList.add('today');
-            }
-            
-            if (currentDay.getDate() === calendarSelectedDate.getDate() && currentDay.getMonth() === calendarSelectedDate.getMonth() && currentDay.getFullYear() === calendarSelectedDate.getFullYear()) {
-                dayDiv.classList.add('selected');
-            }
-            
-            const dYear = currentDay.getFullYear();
-            const dMonth = String(currentDay.getMonth() + 1).padStart(2, '0');
-            const dDay = String(currentDay.getDate()).padStart(2, '0');
-            const dateStr = `${dYear}-${dMonth}-${dDay}`;
-            const dayHasEvent = currentEvents.some(e => e.event_date === dateStr);
-            if (dayHasEvent) {
-                dayDiv.classList.add('has-event');
-            }
-            
-            dayDiv.addEventListener('click', () => {
-                calendarSelectedDate = new Date(dYear, currentDay.getMonth(), currentDay.getDate());
-                calendarCurrentDate = new Date(dYear, currentDay.getMonth(), 1);
-                
-                renderMiniCalendar();
-                updateSelectedDateLabel();
-                renderEvents();
-            });
-            
-            dayDiv.addEventListener('dblclick', () => {
-                calendarSelectedDate = new Date(dYear, currentDay.getMonth(), currentDay.getDate());
-                calendarCurrentDate = new Date(dYear, currentDay.getMonth(), 1);
-                renderMiniCalendar();
-                updateSelectedDateLabel();
-                
-                const dateInput = document.getElementById('event-date');
-                if (dateInput) {
-                    dateInput.value = `${dYear}-${dMonth}-${dDay}`;
-                }
-                openModal('modal-event-form');
-            });
-            
-            daysGrid.appendChild(dayDiv);
-        }
+    const firstDayIndex = new Date(year, month, 1).getDay();
+    const lastDay = new Date(year, month + 1, 0).getDate();
+    const prevLastDay = new Date(year, month, 0).getDate();
+    
+    for (let x = firstDayIndex; x > 0; x--) {
+        const dayDiv = document.createElement('div');
+        dayDiv.className = 'calendar-day other-month';
+        dayDiv.innerText = prevLastDay - x + 1;
+        daysGrid.appendChild(dayDiv);
+    }
+    
+    for (let i = 1; i <= lastDay; i++) {
+        renderDayDiv(year, month, i, daysGrid);
     }
 }
 
@@ -1779,9 +1708,32 @@ async function fetchQuestions() {
         
         const { data: solutions, error: sError } = await supabaseClient
             .from('solutions')
-            .select('question_id');
+            .select('id, question_id, solver_id');
             
         if (sError) throw sError;
+
+        // Check for new questions
+        if (lastKnownQuestionIds.length > 0) {
+            const newQuestions = (questions || []).filter(q => !lastKnownQuestionIds.includes(q.id) && (!activeUser || q.asker_id !== activeUser.id));
+            if (newQuestions.length > 0) {
+                sendBrowserNotification("OmniStudy 提醒", "❓ 有新的學科問答！");
+            }
+        }
+        lastKnownQuestionIds = (questions || []).map(q => q.id);
+        localStorage.setItem('omnistudy-known-question-ids', JSON.stringify(lastKnownQuestionIds));
+
+        // Check if any of my questions got answered
+        if (lastKnownAnsweredIds.length > 0) {
+            const newSolutions = (solutions || []).filter(s => !lastKnownAnsweredIds.includes(s.id));
+            const activeUserQuestionIds = (questions || []).filter(q => activeUser && q.asker_id === activeUser.id).map(q => q.id);
+            const myQuestionsAnswered = newSolutions.some(s => activeUserQuestionIds.includes(s.question_id) && s.solver_id !== activeUser.id);
+            
+            if (myQuestionsAnswered) {
+                sendBrowserNotification("OmniStudy 提醒", "✅ 你的問題已被解答！");
+            }
+        }
+        lastKnownAnsweredIds = (solutions || []).map(s => s.id);
+        localStorage.setItem('omnistudy-known-answered-ids', JSON.stringify(lastKnownAnsweredIds));
         
         currentQuestions = questions || [];
         currentSolutions = solutions || [];
@@ -2061,6 +2013,22 @@ async function openDetailModal(type, id) {
         const isNoteOwner = activeUser && item.user_id === activeUser.id;
         document.getElementById('btn-edit-note').style.display = isNoteOwner ? '' : 'none';
         document.getElementById('btn-delete-note').style.display = isNoteOwner ? '' : 'none';
+
+        // Clear comment input and load comments
+        const commentInput = document.getElementById('note-comment-input');
+        if (commentInput) {
+            commentInput.value = '';
+            commentInput.onkeydown = (e) => {
+                if (e.key === 'Enter') {
+                    sendNoteComment(item.id);
+                }
+            };
+        }
+        const commentBtn = document.getElementById('btn-send-note-comment');
+        if (commentBtn) {
+            commentBtn.onclick = () => sendNoteComment(item.id);
+        }
+        loadNoteComments(item.id);
         
         openModal('modal-note-detail');
         
@@ -2638,3 +2606,193 @@ function initPullToRefresh() {
         }
     });
 }
+
+// =========================================================================
+// Theme Management & applyBodyClasses
+// =========================================================================
+function applyBodyClasses(targetTab) {
+    let classes = [`theme-${targetTab}`];
+    if (currentGlobalTheme !== 'default') {
+        classes.push(currentGlobalTheme);
+    }
+    document.body.className = classes.join(' ');
+}
+window.applyBodyClasses = applyBodyClasses;
+
+function initThemeSettings() {
+    const btn = document.getElementById('btn-theme-settings');
+    const dropdown = document.getElementById('theme-dropdown');
+    
+    if (btn && dropdown) {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const isHidden = dropdown.style.display === 'none';
+            dropdown.style.display = isHidden ? 'block' : 'none';
+        });
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', () => {
+            dropdown.style.display = 'none';
+        });
+
+        dropdown.addEventListener('click', (e) => {
+            e.stopPropagation();
+        });
+
+        // Setup theme options click listeners
+        const options = dropdown.querySelectorAll('.theme-option');
+        options.forEach(opt => {
+            opt.addEventListener('click', () => {
+                const selectedTheme = opt.getAttribute('data-theme');
+                applyTheme(selectedTheme);
+                dropdown.style.display = 'none';
+            });
+        });
+    }
+
+    // Apply the saved global theme visual active state in the dropdown list
+    applyTheme(currentGlobalTheme);
+}
+
+function applyTheme(themeName) {
+    currentGlobalTheme = themeName;
+    localStorage.setItem('omnistudy-theme', themeName);
+
+    // Update body classes for the active tab
+    const activeTab = document.querySelector('.tab-btn.active');
+    const activeTabName = activeTab ? activeTab.getAttribute('data-tab') : 'dashboard';
+    applyBodyClasses(activeTabName);
+
+    // Update active visual class in dropdown
+    const dropdown = document.getElementById('theme-dropdown');
+    if (dropdown) {
+        dropdown.querySelectorAll('.theme-option').forEach(opt => {
+            if (opt.getAttribute('data-theme') === themeName) {
+                opt.classList.add('active-theme');
+            } else {
+                opt.classList.remove('active-theme');
+            }
+        });
+    }
+}
+
+// =========================================================================
+// Browser Notification API Helpers
+// =========================================================================
+function requestNotificationPermission() {
+    if ('Notification' in window) {
+        if (Notification.permission === 'default') {
+            Notification.requestPermission();
+        }
+    }
+}
+
+// Expose globally for testing/debugging if needed
+window.sendBrowserNotification = sendBrowserNotification;
+
+function sendBrowserNotification(title, body) {
+    if ('Notification' in window && Notification.permission === 'granted') {
+        try {
+            new Notification(title, {
+                body: body,
+                icon: 'icon-192.png'
+            });
+        } catch (e) {
+            // Safari iOS might require showing via service worker registration
+            if (navigator.serviceWorker && navigator.serviceWorker.ready) {
+                navigator.serviceWorker.ready.then(reg => {
+                    reg.showNotification(title, {
+                        body: body,
+                        icon: 'icon-192.png'
+                    });
+                });
+            }
+        }
+    }
+}
+
+// =========================================================================
+// Note Comments section logic
+// =========================================================================
+async function loadNoteComments(noteId) {
+    const listEl = document.getElementById('note-comments-list');
+    if (!listEl) return;
+
+    try {
+        const { data: comments, error } = await supabaseClient
+            .from('note_comments')
+            .select('*')
+            .eq('note_id', noteId)
+            .order('created_at', { ascending: true });
+
+        if (error) {
+            // Note: If note_comments table doesn't exist yet, show instructions
+            if (error.code === 'P0001' || error.message.includes('relation "note_comments" does not exist') || error.code === '42P01') {
+                listEl.innerHTML = `<div class="comments-empty">留言板資料表尚未建立，請聯絡管理員設定資料表。</div>`;
+                return;
+            }
+            throw error;
+        }
+
+        if (!comments || comments.length === 0) {
+            listEl.innerHTML = `<div class="comments-empty">目前沒有留言</div>`;
+            return;
+        }
+
+        listEl.innerHTML = comments.map(comment => {
+            const author = userMap.get(comment.user_id) || "未知使用者";
+            const timeStr = new Date(comment.created_at).toLocaleString();
+            return `
+                <div class="comment-item">
+                    <div class="comment-avatar">${author.charAt(0)}</div>
+                    <div class="comment-body">
+                        <div class="comment-header">
+                            <span class="comment-author">${author}</span>
+                            <span class="comment-time">${timeStr}</span>
+                        </div>
+                        <div class="comment-text">${comment.content}</div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        // Auto scroll to bottom
+        listEl.scrollTop = listEl.scrollHeight;
+
+    } catch (err) {
+        console.error("Load comments error:", err);
+        listEl.innerHTML = `<div class="comments-empty" style="color: var(--danger);">載入留言失敗</div>`;
+    }
+}
+
+async function sendNoteComment(noteId) {
+    if (!activeUser) {
+        alert("請先選擇您的使用者身份！");
+        return;
+    }
+
+    const inputEl = document.getElementById('note-comment-input');
+    if (!inputEl) return;
+
+    const val = inputEl.value.trim();
+    if (!val) return;
+
+    try {
+        const { error } = await supabaseClient
+            .from('note_comments')
+            .insert({
+                note_id: noteId,
+                user_id: activeUser.id,
+                content: val
+            });
+
+        if (error) throw error;
+
+        inputEl.value = '';
+        await loadNoteComments(noteId);
+    } catch (err) {
+        console.error("Send comment error:", err);
+        alert("發送留言失敗，請確保 note_comments 資料表已成功建立！");
+    }
+}
+

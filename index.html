@@ -50,6 +50,17 @@
         </div>
 
       </div>
+      <!-- Theme Settings -->
+      <div class="theme-settings-wrapper">
+        <button id="btn-theme-settings" class="btn-icon-header" title="切換主題">
+          <i data-lucide="palette"></i>
+        </button>
+        <div id="theme-dropdown" class="theme-dropdown" style="display: none;">
+          <div class="theme-option active-theme" data-theme="default">🍬 馬卡龍（預設）</div>
+          <div class="theme-option" data-theme="threads-light">☀️ Threads 白</div>
+          <div class="theme-option" data-theme="threads-dark">🌙 Threads 黑</div>
+        </div>
+      </div>
     </div>
     
     <!-- Tab Navigation -->
@@ -153,10 +164,7 @@
           <i data-lucide="search" class="search-icon"></i>
           <input type="text" id="search-calendar" class="search-input" placeholder="搜尋..." />
         </div>
-        <div class="calendar-view-toggle">
-          <button id="btn-view-month" class="active-view">月視圖</button>
-          <button id="btn-view-week">週視圖</button>
-        </div>
+
         <button id="btn-filter-calendar" class="btn btn-secondary btn-filter" data-module="calendar"><i data-lucide="filter"></i> <span class="filter-label">篩選</span></button>
       </div>
 
@@ -397,6 +405,19 @@
         <!-- Markdown content -->
         <div id="detail-note-content" class="markdown-body">
           <!-- Rendered Markdown goes here -->
+        </div>
+        <!-- 留言區 -->
+        <div class="comments-section">
+          <h4 class="comments-title"><i data-lucide="message-circle"></i> 留言區</h4>
+          <div id="note-comments-list" class="comments-list">
+            <div class="comments-empty">目前沒有留言</div>
+          </div>
+          <div class="comment-input-row">
+            <input type="text" id="note-comment-input" class="form-control" placeholder="輸入留言..." />
+            <button id="btn-send-note-comment" class="btn btn-primary" title="發送留言">
+              <i data-lucide="send"></i>
+            </button>
+          </div>
         </div>
       </div>
       <div class="modal-footer">
@@ -1044,7 +1065,11 @@
       });
       
       // Set the body class to trigger dynamic theme colors in style.css
-      document.body.className = `theme-${targetTab}`;
+      if (window.applyBodyClasses) {
+        window.applyBodyClasses(targetTab);
+      } else {
+        document.body.className = `theme-${targetTab}`;
+      }
     }
 
     tabButtons.forEach(button => {
