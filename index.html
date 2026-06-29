@@ -1,0 +1,1142 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OmniStudy - 智慧雲端學習助手</title>
+  
+  <!-- Load Google Fonts: Outfit (Display) & Inter (Body) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+  
+  <!-- PWA Support -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#fcf9fc">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  
+  <!-- CSS Style Sheets -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="theme-notes">
+
+  <!-- Ambient Pastel Blobs -->
+  <div class="pastel-blob blob-1"></div>
+  <div class="pastel-blob blob-2"></div>
+  <div class="pastel-blob blob-3"></div>
+
+  <!-- App Sticky Header -->
+  <header class="app-header">
+    <div class="header-top">
+      <!-- Logo block -->
+      <div class="logo-container" id="logo-home-btn" style="cursor: pointer;">
+        <i data-lucide="graduation-cap" class="logo-icon"></i>
+        <div>
+          <span class="logo-text text-gradient">OmniStudy</span>
+          <span class="logo-subtitle">雲端學習助手</span>
+        </div>
+      </div>
+      
+      <!-- User Selector block -->
+      <div class="user-selector-container">
+        <span class="user-label">當前使用者</span>
+        <div class="select-wrapper">
+          <select id="user-select" class="user-select">
+            <option value="" disabled selected>載入中...</option>
+          </select>
+          <i data-lucide="chevron-down" class="select-arrow"></i>
+        </div>
+
+      </div>
+    </div>
+    
+    <!-- Tab Navigation -->
+    <nav class="tab-navigation">
+      <button id="btn-tab-dashboard" class="tab-btn active" data-tab="dashboard"><i data-lucide="layout"></i> 儀表板</button>
+      <button id="btn-tab-notes" class="tab-btn" data-tab="notes">
+        <i data-lucide="book-open"></i> 學習筆記
+      </button>
+      <button id="btn-tab-calendar" class="tab-btn" data-tab="calendar">
+        <i data-lucide="calendar"></i> 月曆
+      </button>
+      <button id="btn-tab-todo" class="tab-btn" data-tab="todo">
+        <i data-lucide="check-square"></i> 代辦事項
+      </button>
+      <button id="btn-tab-qa" class="tab-btn" data-tab="qa">
+        <i data-lucide="message-circle"></i> 學科問答
+      </button>
+      <button id="btn-tab-quiz" class="tab-btn" data-tab="quiz">
+        <i data-lucide="help-circle"></i> 學科出題
+      </button>
+    </nav>
+  </header>
+
+  <!-- Main Container -->
+  <main class="main-container">
+    
+    <!-- Pull to Refresh Indicator -->
+    <div id="pull-to-refresh-indicator" class="ptr-indicator">
+      <i data-lucide="refresh-cw" class="ptr-icon"></i>
+      <span class="ptr-text">下拉更新...</span>
+    </div>
+    
+        <!-- ==================== Dashboard Tab Panel ==================== -->
+    <section id="panel-dashboard" class="tab-panel active">
+      <div class="dashboard-grid">
+        <div class="dashboard-card theme-todo">
+          <div class="db-card-icon"><i data-lucide="check-square"></i></div>
+          <div class="db-card-value" id="db-count-todo">0</div>
+          <div class="db-card-label">今日待辦</div>
+        </div>
+        <div class="dashboard-card theme-calendar">
+          <div class="db-card-icon"><i data-lucide="calendar"></i></div>
+          <div class="db-card-value" id="db-count-events">0</div>
+          <div class="db-card-label">今日行程</div>
+        </div>
+        <div class="dashboard-card theme-quiz">
+          <div class="db-card-icon"><i data-lucide="help-circle"></i></div>
+          <div class="db-card-value" id="db-count-quizzes">0</div>
+          <div class="db-card-label">今日出題</div>
+        </div>
+        <div class="dashboard-card theme-notes">
+          <div class="db-card-icon"><i data-lucide="book-open"></i></div>
+          <div class="db-card-value" id="db-count-notes">0</div>
+          <div class="db-card-label">今日筆記</div>
+        </div>
+      </div>
+
+      <div class="dashboard-focus-section">
+        <div class="focus-column">
+          <h3 class="focus-title"><i data-lucide="calendar"></i> 今日日程焦點</h3>
+          <div id="db-focus-events" class="focus-list-container">
+            <div class="empty-state-simple">今天沒有排定日程。</div>
+          </div>
+        </div>
+        <div class="focus-column">
+          <h3 class="focus-title"><i data-lucide="check-square"></i> 今日待辦焦點</h3>
+          <div id="db-focus-todos" class="focus-list-container">
+            <div class="empty-state-simple">今天沒有待辦任務。</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== Notes Tab Panel ==================== -->
+    <section id="panel-notes" class="tab-panel">
+      <div class="action-bar">
+        <div class="search-wrapper">
+          <i data-lucide="search" class="search-icon"></i>
+          <input type="text" id="search-notes" class="search-input" placeholder="搜尋..." />
+        </div>
+        <button id="btn-filter-notes" class="btn btn-secondary btn-filter" data-module="notes"><i data-lucide="filter"></i> <span class="filter-label">篩選</span></button>
+        <button id="btn-open-add-note" class="btn btn-primary">
+          <i data-lucide="plus"></i> 新增筆記
+        </button>
+      </div>
+      
+      <!-- Notes Cards Grid -->
+      <div id="notes-grid" class="card-grid">
+        <div class="empty-state">
+          <i data-lucide="inbox"></i>
+          <div class="empty-state-title">尚無筆記</div>
+          <div>點擊「新增筆記」開始記錄。</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== Calendar Tab Panel ==================== -->
+    <section id="panel-calendar" class="tab-panel">
+      <div class="action-bar">
+        <div class="search-wrapper">
+          <i data-lucide="search" class="search-icon"></i>
+          <input type="text" id="search-calendar" class="search-input" placeholder="搜尋..." />
+        </div>
+        <div class="calendar-view-toggle">
+          <button id="btn-view-month" class="active-view">月視圖</button>
+          <button id="btn-view-week">週視圖</button>
+        </div>
+        <button id="btn-filter-calendar" class="btn btn-secondary btn-filter" data-module="calendar"><i data-lucide="filter"></i> <span class="filter-label">篩選</span></button>
+        <button id="btn-open-add-event" class="btn btn-primary">
+          <i data-lucide="plus"></i> 新增行程
+        </button>
+      </div>
+      
+      <!-- Calendar Panel Layout -->
+      <div class="calendar-layout">
+        <!-- Sidebar Mini Calendar -->
+        <div class="calendar-sidebar">
+          <div class="mini-calendar">
+            <div class="calendar-control">
+              <button id="btn-prev-month" class="btn-icon"><i data-lucide="chevron-left"></i></button>
+              <span id="calendar-month-year" class="calendar-month">2026年 六月</span>
+              <button id="btn-next-month" class="btn-icon"><i data-lucide="chevron-right"></i></button>
+            </div>
+            <div class="calendar-weekdays">
+              <div>日</div><div>一</div><div>二</div><div>三</div><div>四</div><div>五</div><div>六</div>
+            </div>
+            <div id="calendar-days" class="calendar-days-grid">
+              <!-- Calendar days populated by JS -->
+            </div>
+          </div>
+        </div>
+        
+        <!-- Agenda List Panel -->
+        <div class="calendar-events-panel">
+          <div class="agenda-header">
+            <div id="selected-date-label" class="agenda-date">本日日程</div>
+            <div class="agenda-sub">雙擊或點擊行程查看詳細內容</div>
+          </div>
+          <div id="calendar-events-list" class="agenda-list">
+            <div class="empty-state">
+              <i data-lucide="calendar"></i>
+              <div class="empty-state-title">該日尚無日程</div>
+              <div>或點擊「新增行程」。</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== Todo Tab Panel ==================== -->
+    <section id="panel-todo" class="tab-panel">
+      <div class="action-bar">
+        <div class="search-wrapper">
+          <i data-lucide="search" class="search-icon"></i>
+          <input type="text" id="search-todo" class="search-input" placeholder="搜尋..." />
+        </div>
+        <button id="btn-filter-todo" class="btn btn-secondary btn-filter" data-module="todo"><i data-lucide="filter"></i> <span class="filter-label">篩選</span></button>
+        <button id="btn-open-add-todo" class="btn btn-primary">
+          <i data-lucide="plus"></i> 新增待辦
+        </button>
+      </div>
+      <div class="sub-filter-bar" id="todo-sub-filters">
+        <button class="sub-filter-btn active" data-filter="all">全部</button>
+        <button class="sub-filter-btn" data-filter="today">今天</button>
+        <button class="sub-filter-btn" data-filter="week">本週</button>
+        <button class="sub-filter-btn" data-filter="pending">未完成</button>
+        <button class="sub-filter-btn" data-filter="completed">已完成</button>
+      </div>
+      
+      <!-- Todo Container -->
+      <div class="todo-container">
+        <!-- Active Section -->
+        <div>
+          <div class="todo-section-title">
+            <i data-lucide="circle" style="color: var(--primary-color); width: 16px; height: 16px;"></i>
+            進行中的任務 <span id="active-todo-count">0</span>
+          </div>
+          <div id="todo-active-list" class="todo-list">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+        
+        <!-- Completed Section -->
+        <div style="margin-top: 10px;">
+          <div class="todo-section-title">
+            <i data-lucide="check-circle" style="color: var(--color-math); width: 16px; height: 16px;"></i>
+            已完成的任務 <span id="completed-todo-count">0</span>
+          </div>
+          <div id="todo-completed-list" class="todo-list">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== QA Tab Panel ==================== -->
+    <section id="panel-qa" class="tab-panel">
+      <div class="action-bar">
+        <div class="search-wrapper">
+          <i data-lucide="search" class="search-icon"></i>
+          <input type="text" id="search-qa" class="search-input" placeholder="搜尋..." />
+        </div>
+        <button id="btn-filter-qa" class="btn btn-secondary btn-filter" data-module="qa"><i data-lucide="filter"></i> <span class="filter-label">篩選</span></button>
+        <button id="btn-open-add-question" class="btn btn-primary">
+          <i data-lucide="plus"></i> 發問問題
+        </button>
+      </div>
+      <div class="sub-filter-bar" id="qa-sub-filters">
+        <button class="sub-filter-btn active" data-filter="all">全部</button>
+        <button class="sub-filter-btn" data-filter="mine">我的提問</button>
+        <button class="sub-filter-btn" data-filter="unanswered">待回覆</button>
+        <button class="sub-filter-btn" data-filter="solved">已解答</button>
+      </div>
+      
+      <!-- Questions Cards Grid -->
+      <div id="qa-grid" class="card-grid">
+        <div class="empty-state">
+          <i data-lucide="help-circle"></i>
+          <div class="empty-state-title">尚無問答問題</div>
+          <div>點擊「新增問題」發表疑問。</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== Quiz Tab Panel ==================== -->
+    <section id="panel-quiz" class="tab-panel">
+      <div class="action-bar">
+        <div class="search-wrapper">
+          <i data-lucide="search" class="search-icon"></i>
+          <input type="text" id="search-quiz" class="search-input" placeholder="搜尋..." />
+        </div>
+        <button id="btn-filter-quiz" class="btn btn-secondary btn-filter" data-module="quiz"><i data-lucide="filter"></i> <span class="filter-label">篩選</span></button>
+        <button id="btn-open-add-quiz" class="btn btn-primary">
+          <i data-lucide="plus"></i> 新增出題
+        </button>
+      </div>
+      
+      <!-- Quiz Cards Grid -->
+      <div id="quiz-grid" class="card-grid">
+        <div class="empty-state">
+          <i data-lucide="help-circle"></i>
+          <div class="empty-state-title">尚無學科出題</div>
+          <div>點擊「新增出題」開始設計挑戰。</div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+
+  <!-- ==================== MODALS SYSTEM ==================== -->
+
+  <!-- 1. Add/Edit Note Form Modal -->
+  <div id="modal-note-form" class="modal-overlay">
+    <div class="modal-container">
+      <div class="modal-header">
+        <h3 id="note-form-title" class="modal-title">新增筆記</h3>
+        <button class="btn-close" onclick="closeModal('modal-note-form')"><i data-lucide="x"></i></button>
+      </div>
+      <div class="modal-body">
+        <form id="note-form" onsubmit="return false;">
+          <input type="hidden" id="form-note-id" />
+          <div class="form-row-2">
+            <div class="form-group">
+              <label for="note-title" class="form-label">筆記標題</label>
+              <input type="text" id="note-title" class="form-control" placeholder="請輸入標題..." required />
+            </div>
+            <div class="form-group">
+              <label for="note-subject" class="form-label">科目標籤</label>
+              <select id="note-subject" class="form-control">
+                <option value="" selected>無學科關聯</option>
+                <option value="國文">國文</option>
+                <option value="英文">英文</option>
+                <option value="數學">數學</option>
+                <option value="物理">物理</option>
+                <option value="化學">化學</option>
+                <option value="生物">生物</option>
+                <option value="地科">地科</option>
+                <option value="歷史">歷史</option>
+                <option value="地理">地理</option>
+                <option value="公民">公民</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="note-content" class="form-label">筆記內文</label>
+            <textarea id="note-content" class="form-control" placeholder="請輸入詳細內容..." required></textarea>
+          </div>
+          
+
+          
+          <!-- Image upload Widget -->
+          <div class="form-group">
+            <label class="form-label">上傳圖片</label>
+            <div class="file-upload-widget">
+              <input type="file" id="note-image-file" class="file-upload-input" accept="image/*" />
+              <div class="file-upload-info">
+                <i data-lucide="image"></i>
+                <span>點擊此處或拖曳圖片檔案至此上傳</span>
+                <span style="font-size: 11px; opacity: 0.6;">支援 PNG, JPG, GIF 格式</span>
+              </div>
+            </div>
+            <div class="image-preview-container" id="note-image-preview-container">
+              <img id="note-image-preview" src="" alt="Image Preview" />
+              <button type="button" class="btn-remove-image" id="btn-remove-note-img"><i data-lucide="trash-2"></i></button>
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeModal('modal-note-form')">取消</button>
+        <button type="button" id="btn-save-note" class="btn btn-primary">儲存筆記</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. View Note Detail Modal -->
+  <div id="modal-note-detail" class="modal-overlay">
+    <div class="modal-container">
+      <div class="modal-header">
+        <h3 class="modal-title">筆記詳情</h3>
+        <button class="btn-close" onclick="closeModal('modal-note-detail')"><i data-lucide="x"></i></button>
+      </div>
+      <div class="modal-body">
+        <div class="detail-header">
+          <span id="detail-note-subject" class="subject-badge general">科目標籤</span>
+          <h2 id="detail-note-title" class="detail-title">筆記標題載入中...</h2>
+          <div class="detail-meta-bar">
+            <div class="detail-author">
+              <div class="author-avatar" id="detail-note-avatar">A</div>
+              <span id="detail-note-author">作者名</span>
+            </div>
+            <div class="detail-meta-right">
+              <div class="detail-meta-item">
+                <i data-lucide="clock"></i>
+                <span id="detail-note-date">更新日期</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Large note image -->
+        <img id="detail-note-image" class="detail-image" src="" alt="筆記圖片" style="display: none;" />
+        
+        <!-- Markdown content -->
+        <div id="detail-note-content" class="markdown-body">
+          <!-- Rendered Markdown goes here -->
+        </div>
+      </div>
+      <div class="modal-footer">
+        <div style="margin-right: auto;">
+          <button type="button" id="btn-edit-note" class="btn btn-secondary"><i data-lucide="edit-2"></i> 編輯</button>
+          <button type="button" id="btn-delete-note" class="btn btn-danger"><i data-lucide="trash-2"></i> 刪除</button>
+        </div>
+        <button type="button" class="btn btn-secondary" onclick="closeModal('modal-note-detail')">關閉</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. Add/Edit Calendar Event Form Modal -->
+  <div id="modal-event-form" class="modal-overlay">
+    <div class="modal-container">
+      <div class="modal-header">
+        <h3 id="event-form-title" class="modal-title">新增行程</h3>
+        <button class="btn-close" onclick="closeModal('modal-event-form')"><i data-lucide="x"></i></button>
+      </div>
+      <div class="modal-body">
+        <form id="event-form" onsubmit="return false;">
+          <input type="hidden" id="form-event-id" />
+          <div class="form-row-2">
+            <div class="form-group">
+              <label for="event-title" class="form-label">行程主題</label>
+              <input type="text" id="event-title" class="form-control" placeholder="請輸入標題..." required />
+            </div>
+            <div class="form-group">
+              <label for="event-subject" class="form-label">科目分類</label>
+              <select id="event-subject" class="form-control">
+                <option value="" selected>無學科關聯</option>
+                <option value="國文">國文</option>
+                <option value="英文">英文</option>
+                <option value="數學">數學</option>
+                <option value="物理">物理</option>
+                <option value="化學">化學</option>
+                <option value="生物">生物</option>
+                <option value="地科">地科</option>
+                <option value="歷史">歷史</option>
+                <option value="地理">地理</option>
+                <option value="公民">公民</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row-3">
+            <div class="form-group">
+              <label for="event-date" class="form-label">日期</label>
+              <input type="date" id="event-date" class="form-control" required />
+            </div>
+            <div class="form-group">
+              <label for="event-start-time" class="form-label">開始時間</label>
+              <input type="time" id="event-start-time" class="form-control" required />
+            </div>
+            <div class="form-group">
+              <label for="event-end-time" class="form-label">結束時間</label>
+              <input type="time" id="event-end-time" class="form-control" required />
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="event-desc" class="form-label">詳細說明</label>
+            <textarea id="event-desc" class="form-control" placeholder="請輸入詳細內容..."></textarea>
+          </div>
+          <div class="form-group" style="margin-top: 14px;">
+            <label class="form-checkbox-label" style="display: flex; align-items: center; gap: 8px; font-size: 14px; cursor: pointer; color: var(--text-secondary);">
+              <input type="checkbox" id="event-sync-todo" style="width: 18px; height: 18px; cursor: pointer;" />
+              <span>將此行程同步加入待辦清單並提醒</span>
+            </label>
+          </div>
+          
+          <!-- Image upload Widget -->
+          <div class="form-group">
+            <label class="form-label">行程備註圖片</label>
+            <div class="file-upload-widget">
+              <input type="file" id="event-image-file" class="file-upload-input" accept="image/*" />
+              <div class="file-upload-info">
+                <i data-lucide="image"></i>
+                <span>點擊上傳課表或講義封面</span>
+              </div>
+            </div>
+            <div class="image-preview-container" id="event-image-preview-container">
+              <img id="event-image-preview" src="" alt="Image Preview" />
+              <button type="button" class="btn-remove-image" id="btn-remove-event-img"><i data-lucide="trash-2"></i></button>
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeModal('modal-event-form')">取消</button>
+        <button type="button" id="btn-save-event" class="btn btn-primary">儲存行程</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. View Calendar Event Detail Modal -->
+  <div id="modal-event-detail" class="modal-overlay">
+    <div class="modal-container">
+      <div class="modal-header">
+        <h3 class="modal-title">行程詳情</h3>
+        <button class="btn-close" onclick="closeModal('modal-event-detail')"><i data-lucide="x"></i></button>
+      </div>
+      <div class="modal-body">
+        <div class="detail-header">
+          <span id="detail-event-subject" class="subject-badge general">科目標籤</span>
+          <h2 id="detail-event-title" class="detail-title">行程標題載入中...</h2>
+          <div class="detail-meta-bar">
+            <div class="detail-author">
+              <div class="author-avatar" id="detail-event-avatar">U</div>
+              <span id="detail-event-author">建立者</span>
+            </div>
+            <div class="detail-meta-right">
+              <div class="detail-meta-item">
+                <i data-lucide="calendar"></i>
+                <span id="detail-event-date-text">日期行程</span>
+              </div>
+              <div class="detail-meta-item">
+                <i data-lucide="clock"></i>
+                <span id="detail-event-time-text">時間</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <img id="detail-event-image" class="detail-image" src="" alt="行程圖片" style="display: none;" />
+        
+        <div id="detail-event-desc" class="markdown-body">
+          <!-- Event description -->
+        </div>
+      </div>
+      <div class="modal-footer">
+        <div style="margin-right: auto;">
+          <button type="button" id="btn-edit-event" class="btn btn-secondary"><i data-lucide="edit-2"></i> 編輯</button>
+          <button type="button" id="btn-delete-event" class="btn btn-danger"><i data-lucide="trash-2"></i> 刪除</button>
+        </div>
+        <button type="button" class="btn btn-secondary" onclick="closeModal('modal-event-detail')">關閉</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. Add/Edit Todo Form Modal -->
+  <div id="modal-todo-form" class="modal-overlay">
+    <div class="modal-container">
+      <div class="modal-header">
+        <h3 id="todo-form-title" class="modal-title">新增待辦事項</h3>
+        <button class="btn-close" onclick="closeModal('modal-todo-form')"><i data-lucide="x"></i></button>
+      </div>
+      <div class="modal-body">
+        <form id="todo-form" onsubmit="return false;">
+          <input type="hidden" id="form-todo-id" />
+          <div class="form-row-2">
+            <div class="form-group">
+              <label for="todo-title" class="form-label">待辦任務名稱</label>
+              <input type="text" id="todo-title" class="form-control" placeholder="請輸入標題..." required />
+            </div>
+            <div class="form-group">
+              <label for="todo-subject" class="form-label">科目分類</label>
+              <select id="todo-subject" class="form-control">
+                <option value="" selected>無學科關聯</option>
+                <option value="國文">國文</option>
+                <option value="英文">英文</option>
+                <option value="數學">數學</option>
+                <option value="物理">物理</option>
+                <option value="化學">化學</option>
+                <option value="生物">生物</option>
+                <option value="地科">地科</option>
+                <option value="歷史">歷史</option>
+                <option value="地理">地理</option>
+                <option value="公民">公民</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="todo-due-date" class="form-label">截止日期</label>
+            <input type="date" id="todo-due-date" class="form-control" />
+          </div>
+          <div class="form-group">
+            <label for="todo-desc" class="form-label">任務詳細說明</label>
+            <textarea id="todo-desc" class="form-control" placeholder="請輸入詳細內容..."></textarea>
+          </div>
+          
+          <!-- Image upload Widget -->
+          <div class="form-group">
+            <label class="form-label">參考圖片/題目截圖</label>
+            <div class="file-upload-widget">
+              <input type="file" id="todo-image-file" class="file-upload-input" accept="image/*" />
+              <div class="file-upload-info">
+                <i data-lucide="image"></i>
+                <span>點擊上傳截圖</span>
+              </div>
+            </div>
+            <div class="image-preview-container" id="todo-image-preview-container">
+              <img id="todo-image-preview" src="" alt="Image Preview" />
+              <button type="button" class="btn-remove-image" id="btn-remove-todo-img"><i data-lucide="trash-2"></i></button>
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeModal('modal-todo-form')">取消</button>
+        <button type="button" id="btn-save-todo" class="btn btn-primary">儲存待辦</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 6. View Todo Detail Modal -->
+  <div id="modal-todo-detail" class="modal-overlay">
+    <div class="modal-container">
+      <div class="modal-header">
+        <h3 class="modal-title">待辦任務詳情</h3>
+        <button class="btn-close" onclick="closeModal('modal-todo-detail')"><i data-lucide="x"></i></button>
+      </div>
+      <div class="modal-body">
+        <div class="detail-header">
+          <span id="detail-todo-subject" class="subject-badge general">科目標籤</span>
+          <h2 id="detail-todo-title" class="detail-title">任務載入中...</h2>
+          <div class="detail-meta-bar">
+            <div class="detail-author">
+              <div class="author-avatar" id="detail-todo-avatar">T</div>
+              <span id="detail-todo-author">指派人</span>
+            </div>
+            <div class="detail-meta-right">
+              <div class="detail-meta-item">
+                <i data-lucide="calendar"></i>
+                <span id="detail-todo-due">截止日期</span>
+              </div>
+              <div class="detail-meta-item">
+                <i data-lucide="activity"></i>
+                <span id="detail-todo-status">狀態</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <img id="detail-todo-image" class="detail-image" src="" alt="待辦圖片" style="display: none;" />
+        
+        <div id="detail-todo-desc" class="markdown-body">
+          <!-- Todo description -->
+        </div>
+      </div>
+      <div class="modal-footer">
+        <div style="margin-right: auto;">
+          <button type="button" id="btn-edit-todo" class="btn btn-secondary"><i data-lucide="edit-2"></i> 編輯</button>
+          <button type="button" id="btn-delete-todo" class="btn btn-danger"><i data-lucide="trash-2"></i> 刪除</button>
+        </div>
+        <button type="button" class="btn btn-secondary" onclick="closeModal('modal-todo-detail')">關閉</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 7. Add/Edit Question Form Modal -->
+  <div id="modal-question-form" class="modal-overlay">
+    <div class="modal-container">
+      <div class="modal-header">
+        <h3 id="question-form-title" class="modal-title">學科發問</h3>
+        <button class="btn-close" onclick="closeModal('modal-question-form')"><i data-lucide="x"></i></button>
+      </div>
+      <div class="modal-body">
+        <form id="question-form" onsubmit="return false;">
+          <input type="hidden" id="form-question-id" />
+          <div class="form-row-2">
+            <div class="form-group">
+              <label for="question-title" class="form-label">問題簡述</label>
+              <input type="text" id="question-title" class="form-control" placeholder="請輸入標題..." required />
+            </div>
+            <div class="form-group">
+              <label for="question-subject" class="form-label">科目分類</label>
+              <select id="question-subject" class="form-control">
+                <option value="" selected>無學科關聯</option>
+                <option value="國文">國文</option>
+                <option value="英文">英文</option>
+                <option value="數學">數學</option>
+                <option value="物理">物理</option>
+                <option value="化學">化學</option>
+                <option value="生物">生物</option>
+                <option value="地科">地科</option>
+                <option value="歷史">歷史</option>
+                <option value="地理">地理</option>
+                <option value="公民">公民</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="question-content" class="form-label">詳細說明問題</label>
+            <textarea id="question-content" class="form-control" placeholder="請輸入詳細內容..." required></textarea>
+          </div>
+          
+          <!-- Image upload Widget -->
+          <div class="form-group">
+            <label class="form-label">上傳題目照片</label>
+            <div class="file-upload-widget">
+              <input type="file" id="question-image-file" class="file-upload-input" accept="image/*" />
+              <div class="file-upload-info">
+                <i data-lucide="image"></i>
+                <span>點擊上傳題目清晰截圖</span>
+              </div>
+            </div>
+            <div class="image-preview-container" id="question-image-preview-container">
+              <img id="question-image-preview" src="" alt="Image Preview" />
+              <button type="button" class="btn-remove-image" id="btn-remove-question-img"><i data-lucide="trash-2"></i></button>
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeModal('modal-question-form')">取消</button>
+        <button type="button" id="btn-save-question" class="btn btn-primary">提交問題</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 7b. Add/Edit Quiz Form Modal -->
+  <div id="modal-quiz-form" class="modal-overlay">
+    <div class="modal-container">
+      <div class="modal-header">
+        <h3 id="quiz-form-title" class="modal-title">新增學科挑戰</h3>
+        <button class="btn-close" onclick="closeModal('modal-quiz-form')"><i data-lucide="x"></i></button>
+      </div>
+      <div class="modal-body">
+        <form id="quiz-form" onsubmit="return false;">
+          <input type="hidden" id="form-quiz-id" />
+          <div class="form-row-2">
+            <div class="form-group">
+              <label for="quiz-subject" class="form-label">科目分類</label>
+              <select id="quiz-subject" class="form-control">
+                <option value="" selected>無學科關聯</option>
+                <option value="國文">國文</option>
+                <option value="英文">英文</option>
+                <option value="數學">數學</option>
+                <option value="物理">物理</option>
+                <option value="化學">化學</option>
+                <option value="生物">生物</option>
+                <option value="地科">地科</option>
+                <option value="歷史">歷史</option>
+                <option value="地理">地理</option>
+                <option value="公民">公民</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="quiz-chapter" class="form-label">章節</label>
+              <input type="text" id="quiz-chapter" class="form-control" placeholder="如：第一章 數列..." />
+            </div>
+          </div>
+          <div class="form-group" style="margin-top: 14px;">
+            <label for="quiz-question-text" class="form-label">題目內容</label>
+            <textarea id="quiz-question-text" class="form-control" placeholder="請輸入題目詳細敘述..." required style="min-height: 54px; resize: vertical;"></textarea>
+          </div>
+          
+          <!-- Image upload Widget (Optional) -->
+          <div class="form-group" style="margin-top: 14px;">
+            <label class="form-label">題目圖片</label>
+            <div class="file-upload-widget">
+              <input type="file" id="quiz-image-file" class="file-upload-input" accept="image/*" />
+              <div class="file-upload-info">
+                <i data-lucide="image"></i>
+                <span>點擊上傳題目圖片</span>
+              </div>
+            </div>
+            <!-- Injected image URL fallback text input container -->
+            <div class="image-preview-container" id="quiz-image-preview-container">
+              <img id="quiz-image-preview" src="" alt="Image Preview" />
+              <button type="button" class="btn-remove-image" id="btn-remove-quiz-img"><i data-lucide="trash-2"></i></button>
+            </div>
+          </div>
+          
+          <!-- Discord Style Poll Builder -->
+          <div class="form-group" style="margin-top: 16px; margin-bottom: 16px;">
+            <label class="form-label" style="display: flex; justify-content: space-between; align-items: center;">
+              <span>選項設定 (點選左側圓圈指定正確答案)</span>
+              <span id="quiz-options-count" style="font-size: 12px; color: var(--text-secondary);">2/4 個選項</span>
+            </label>
+            <div id="discord-poll-builder" class="discord-poll-builder">
+              <!-- Dynamically populated in app.js -->
+            </div>
+            <button type="button" id="btn-quiz-add-option" class="btn-discord-add-option">
+              <i data-lucide="plus" style="width: 16px; height: 16px;"></i> 新增選項
+            </button>
+          </div>
+          <div class="form-group" style="margin-top: 14px;">
+            <label for="quiz-explanation" class="form-label">題目解析</label>
+            <textarea id="quiz-explanation" class="form-control" placeholder="請輸入解題詳細解析..." style="min-height: 80px;"></textarea>
+          </div>
+
+          
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeModal('modal-quiz-form')">取消</button>
+        <button type="button" id="btn-save-quiz" class="btn btn-primary">發佈題目</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 8. View QA Details Modal (Displays Question, Solutions thread, and Solution form) -->
+  <div id="modal-qa-detail" class="modal-overlay">
+    <div class="modal-container modal-wide">
+      <div class="modal-header">
+        <h3 class="modal-title">問答解題詳情</h3>
+        <button class="btn-close" onclick="closeModal('modal-qa-detail')"><i data-lucide="x"></i></button>
+      </div>
+      <div class="modal-body">
+        
+        <!-- Question Section -->
+        <div class="detail-header" style="border-bottom: none; margin-bottom: 0;">
+          <span id="detail-qa-subject" class="subject-badge general">科目</span>
+          <h2 id="detail-qa-title" class="detail-title">問題標題載入中...</h2>
+          <div class="detail-meta-bar">
+            <div class="detail-author">
+              <div class="author-avatar" id="detail-qa-avatar">Q</div>
+              <span id="detail-qa-author">提問人</span>
+            </div>
+            <div class="detail-meta-right">
+              <div class="detail-meta-item">
+                <i data-lucide="calendar"></i>
+                <span id="detail-qa-date">提問日期</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <img id="detail-qa-image" class="detail-image" src="" alt="問題題目照片" style="display: none;" />
+        
+        <div id="detail-qa-content" class="markdown-body" style="background: rgba(0,0,0,0.01); padding: 18px; border-radius: var(--radius-input); border: var(--border-thin);">
+          <!-- Question content markdown -->
+        </div>
+        
+        <div style="display: flex; gap: 10px; margin-top: 14px; justify-content: flex-end;">
+          <button type="button" id="btn-edit-question" class="btn btn-secondary btn-sm"><i data-lucide="edit-2"></i> 編輯問題</button>
+          <button type="button" id="btn-delete-question" class="btn btn-danger btn-sm"><i data-lucide="trash-2"></i> 刪除問題</button>
+        </div>
+
+        <!-- Solutions Thread Section -->
+        <div class="solutions-section">
+          <h4 class="solutions-section-title">
+            <i data-lucide="check-circle-2"></i>
+            解題討論回覆
+          </h4>
+          
+          <!-- Solutions list container -->
+          <div id="solutions-list" class="solutions-thread">
+            <div class="empty-state" style="padding: 30px;">
+              <i data-lucide="message-square"></i>
+              <div class="empty-state-title">目前尚未有任何解題回覆</div>
+              <div>快在下方提供你的解題思路吧！</div>
+            </div>
+          </div>
+          
+          <!-- Add New Solution Form -->
+          <div class="new-solution-card">
+            <h5 class="new-solution-title">
+              <i data-lucide="pen-tool"></i>
+              撰寫您的解題回覆
+            </h5>
+            <form id="solution-form" onsubmit="return false;">
+              <div class="form-group">
+                <label for="new-solution-content" class="form-label">解題說明步驟</label>
+                <textarea id="new-solution-content" class="form-control" placeholder="請寫下您的解答步驟..." required></textarea>
+              </div>
+              
+              <div class="form-group">
+                <label class="form-label">解題步驟算式照片</label>
+                <div class="file-upload-widget" style="padding: 16px;">
+                  <input type="file" id="new-solution-image-file" class="file-upload-input" accept="image/*" />
+                  <div class="file-upload-info" style="gap: 4px;">
+                    <i data-lucide="image" style="width: 24px; height: 24px;"></i>
+                    <span>點擊上傳解題過程照片</span>
+                  </div>
+                </div>
+                <div class="image-preview-container" id="new-solution-image-preview-container">
+                  <img id="new-solution-image-preview" src="" alt="Solution Image Preview" />
+                  <button type="button" class="btn-remove-image" id="btn-remove-solution-img"><i data-lucide="trash-2"></i></button>
+                </div>
+              </div>
+              
+              <div style="text-align: right; margin-top: 16px;">
+                <button type="button" id="btn-submit-solution" class="btn btn-primary">
+                  <i data-lucide="send"></i> 送出解答
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeModal('modal-qa-detail')">關閉</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 9. Quick Add User Modal -->
+  <div id="modal-user-form" class="modal-overlay">
+    <div class="modal-container modal-small">
+      <div class="modal-header">
+        <h3 class="modal-title">新增成員</h3>
+        <button class="btn-close" onclick="closeModal('modal-user-form')"><i data-lucide="x"></i></button>
+      </div>
+      <div class="modal-body">
+        <form id="user-form" onsubmit="return false;">
+          <div class="form-group">
+            <label for="new-user-name" class="form-label">成員姓名</label>
+            <input type="text" id="new-user-name" class="form-control" placeholder="請輸入姓名..." required />
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeModal('modal-user-form')">取消</button>
+        <button type="button" id="btn-save-user" class="btn btn-primary">確認新增</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Force User Selection Modal on Entry -->
+  <div id="modal-force-user" class="modal-overlay active">
+    <div class="modal-container modal-small force-user-modal">
+      <div class="modal-header force-user-header">
+        <h3 class="modal-title">歡迎使用 OmniStudy</h3>
+      </div>
+      <div class="modal-body">
+        <p class="modal-subtitle" style="margin-bottom: 20px; color: var(--text-secondary); font-size: 14px;">請選擇使用者身份進入系統：</p>
+        <div class="form-group" style="margin-bottom: 0;">
+          <div class="select-wrapper force-select-wrapper">
+            <select id="force-user-select" class="user-select force-user-select">
+              <option value="" disabled selected>載入中...</option>
+            </select>
+            <i data-lucide="chevron-down" class="select-arrow"></i>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer force-user-footer">
+        <button type="button" id="btn-confirm-user" class="btn btn-primary">確認進入</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mobile Navigation Bar -->
+  <nav class="mobile-nav">
+    <button class="tab-btn active" data-tab="dashboard">
+      <i data-lucide="layout"></i>
+      <span>儀表板</span>
+    </button>
+    <button class="tab-btn" data-tab="notes">
+      <i data-lucide="book-open"></i>
+      <span>學習筆記</span>
+    </button>
+    <button class="tab-btn" data-tab="calendar">
+      <i data-lucide="calendar"></i>
+      <span>月曆</span>
+    </button>
+    <button class="tab-btn" data-tab="todo">
+      <i data-lucide="check-square"></i>
+      <span>代辦事項</span>
+    </button>
+    <button class="tab-btn" data-tab="qa">
+      <i data-lucide="message-circle"></i>
+      <span>學科問答</span>
+    </button>
+    <button class="tab-btn" data-tab="quiz">
+      <i data-lucide="help-circle"></i>
+      <span>學科出題</span>
+    </button>
+  </nav>
+
+    <!-- Subject Filter Selection Modal -->
+  <div id="modal-filter-subjects" class="modal-overlay">
+    <div class="modal-container modal-small">
+      <div class="modal-header">
+        <h3 class="modal-title">篩選學科</h3>
+        <button class="btn-close" onclick="closeModal('modal-filter-subjects')"><i data-lucide="x"></i></button>
+      </div>
+      <div class="modal-body">
+        <div class="filter-modal-grid" id="filter-subject-options">
+          <button class="chip-option active" data-subject="all">全部</button>
+          <button class="chip-option" data-subject="none">無學科關聯</button>
+          <button class="chip-option" data-subject="國文">國文</button>
+          <button class="chip-option" data-subject="英文">英文</button>
+          <button class="chip-option" data-subject="數學">數學</button>
+          <button class="chip-option" data-subject="物理">物理</button>
+          <button class="chip-option" data-subject="化學">化學</button>
+          <button class="chip-option" data-subject="生物">生物</button>
+          <button class="chip-option" data-subject="地科">地科</button>
+          <button class="chip-option" data-subject="歷史">歷史</button>
+          <button class="chip-option" data-subject="地理">地理</button>
+          <button class="chip-option" data-subject="公民">公民</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== CDN LIBRARIES ==================== -->
+  
+  <!-- Supabase Client Library -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  
+  <!-- Marked Markdown Parser Library -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  
+  <!-- Lucide Icons Pack -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  
+  <!-- Connection parameters -->
+  <script src="config.js"></script>
+
+  <!-- ==================== INTERACTIVE MOCKUP FALLBACK SCRIPT ==================== -->
+  <script>
+    // Initialize Lucide Icons
+    document.addEventListener("DOMContentLoaded", () => {
+      if (window.lucide) {
+        window.lucide.createIcons();
+      }
+      
+            // Logo click handler to switch to dashboard
+      document.getElementById('logo-home-btn')?.addEventListener('click', () => {
+        switchTab('dashboard');
+      });
+
+      // Auto-render calendar
+      if (typeof renderMiniCalendar === 'function') {
+        renderMiniCalendar();
+      }
+    });
+
+    // Helper functions for modal toggles
+    function openModal(id) {
+      document.getElementById(id).classList.add('active');
+    }
+    
+    function closeModal(id) {
+      document.getElementById(id).classList.remove('active');
+    }
+
+    // Tab Navigation Logic with Dynamic theme injection
+    const tabButtons = document.querySelectorAll('.tab-btn');
+    const tabPanels = document.querySelectorAll('.tab-panel');
+
+    function switchTab(targetTab) {
+      tabButtons.forEach(btn => {
+        if (btn.getAttribute('data-tab') === targetTab) {
+          btn.classList.add('active');
+        } else {
+          btn.classList.remove('active');
+        }
+      });
+      tabPanels.forEach(panel => {
+        if (panel.id === `panel-${targetTab}`) {
+          panel.classList.add('active');
+        } else {
+          panel.classList.remove('active');
+        }
+      });
+      
+      // Set the body class to trigger dynamic theme colors in style.css
+      document.body.className = `theme-${targetTab}`;
+    }
+
+    tabButtons.forEach(button => {
+      button.addEventListener('click', () => {
+        const targetTab = button.getAttribute('data-tab');
+        switchTab(targetTab);
+      });
+    });
+
+    // Initialize theme
+    switchTab('dashboard');
+
+    // Subject Chips Selection Toggling Visual
+    const filterChipsContainers = document.querySelectorAll('.filter-chips');
+    filterChipsContainers.forEach(container => {
+      container.addEventListener('click', (e) => {
+        const chip = e.target.closest('.chip');
+        if (!chip) return;
+        
+        container.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+        chip.classList.add('active');
+      });
+    });
+
+    // Simple File Upload Input Image Preview Mockup
+    function setupFileUploadPreview(inputId, previewContainerId, previewImageId, removeBtnId) {
+      const input = document.getElementById(inputId);
+      const container = document.getElementById(previewContainerId);
+      const image = document.getElementById(previewImageId);
+      const removeBtn = document.getElementById(removeBtnId);
+      
+      if (!input || !container || !image) return;
+      
+      input.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = function(evt) {
+            image.src = evt.target.result;
+            container.style.display = 'block';
+          };
+          reader.readAsDataURL(file);
+        }
+      });
+      
+      if (removeBtn) {
+        removeBtn.addEventListener('click', () => {
+          input.value = '';
+          image.src = '';
+          container.style.display = 'none';
+        });
+      }
+    }
+
+    setupFileUploadPreview('note-image-file', 'note-image-preview-container', 'note-image-preview', 'btn-remove-note-img');
+    setupFileUploadPreview('event-image-file', 'event-image-preview-container', 'event-image-preview', 'btn-remove-event-img');
+    setupFileUploadPreview('todo-image-file', 'todo-image-preview-container', 'todo-image-preview', 'btn-remove-todo-img');
+    setupFileUploadPreview('question-image-file', 'question-image-preview-container', 'question-image-preview', 'btn-remove-question-img');
+    setupFileUploadPreview('new-solution-image-file', 'new-solution-image-preview-container', 'new-solution-image-preview', 'btn-remove-solution-img');
+    // Mockup Initial User Loader (gets updated by real app.js)
+    const userSelect = document.getElementById('user-select');
+    if (userSelect && userSelect.innerHTML.includes('載入中...')) {
+      userSelect.innerHTML = `
+        <option value="" disabled>請選擇使用者...</option>
+        <option value="mock-1" selected>3</option>
+        <option value="mock-2">7</option>
+        <option value="mock-3">18</option>
+        <option value="mock-4">34</option>
+      `;
+    }
+
+    // Basic Modal Button Openers
+    document.getElementById('btn-open-add-note')?.addEventListener('click', () => openModal('modal-note-form'));
+    document.getElementById('btn-tab-dashboard')?.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+        document.getElementById('btn-tab-dashboard').classList.add('active');
+        document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+        document.getElementById('panel-dashboard').classList.add('active');
+    });
+    document.getElementById('btn-open-add-event')?.addEventListener('click', () => openModal('modal-event-form'));
+    document.getElementById('btn-open-add-todo')?.addEventListener('click', () => openModal('modal-todo-form'));
+    document.getElementById('btn-open-add-question')?.addEventListener('click', () => openModal('modal-question-form'));
+    document.getElementById('btn-open-add-quiz')?.addEventListener('click', () => openModal('modal-quiz-form'));
+    document.getElementById('btn-add-user')?.addEventListener('click', () => openModal('modal-user-form'));
+
+    // Populate calendar label
+    updateSelectedDateLabel();
+  </script>
+
+  <!-- Load main app logic (will overwrite interactive mockups when connected) -->
+  <script src="app.js" defer></script>
+</body>
+</html>
