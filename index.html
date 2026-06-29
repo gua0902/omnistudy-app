@@ -158,11 +158,8 @@
           <button id="btn-view-week">週視圖</button>
         </div>
         <button id="btn-filter-calendar" class="btn btn-secondary btn-filter" data-module="calendar"><i data-lucide="filter"></i> <span class="filter-label">篩選</span></button>
-        <button id="btn-open-add-event" class="btn btn-primary">
-          <i data-lucide="plus"></i> 新增行程
-        </button>
       </div>
-      
+
       <!-- Calendar Panel Layout -->
       <div class="calendar-layout">
         <!-- Sidebar Mini Calendar -->
@@ -180,6 +177,10 @@
               <!-- Calendar days populated by JS -->
             </div>
           </div>
+          <!-- Add Event Button Below Calendar -->
+          <button id="btn-open-add-event" class="btn btn-primary" style="width: 100%; margin-top: 16px; display: flex; justify-content: center; align-items: center; gap: 8px;">
+            <i data-lucide="plus"></i> 新增行程
+          </button>
         </div>
         
         <!-- Agenda List Panel -->
@@ -440,11 +441,8 @@
               </select>
             </div>
           </div>
-          <div class="form-row-3">
-            <div class="form-group">
-              <label for="event-date" class="form-label">日期</label>
-              <input type="date" id="event-date" class="form-control" required />
-            </div>
+          <input type="hidden" id="event-date" required />
+          <div class="form-row-2">
             <div class="form-group">
               <label for="event-start-time" class="form-label">開始時間</label>
               <input type="time" id="event-start-time" class="form-control" required />
