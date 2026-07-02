@@ -170,3 +170,27 @@ ALTER TABLE public.note_comments ENABLE ROW LEVEL SECURITY;
 -- 建立 RLS 政策 (匿名允許全部讀寫)
 CREATE POLICY "Allow anon read/write note_comments" ON public.note_comments FOR ALL USING (true) WITH CHECK (true);
 
+
+-- =========================================================================
+-- 10. 建立學習作業資料表 (homeworks)
+-- =========================================================================
+
+CREATE TABLE IF NOT EXISTS public.homeworks (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID REFERENCES public.users(id) ON DELETE SET NULL,
+    subject TEXT NOT NULL,
+    title TEXT NOT NULL,
+    description TEXT NOT NULL,
+    image_url TEXT,
+    is_completed BOOLEAN DEFAULT false NOT NULL,
+    due_date DATE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+-- 啟用 RLS
+ALTER TABLE public.homeworks ENABLE ROW LEVEL SECURITY;
+
+-- 建立 RLS 政策 (匿名允許全部讀寫)
+CREATE POLICY "Allow anon read/write homeworks" ON public.homeworks FOR ALL USING (true) WITH CHECK (true);
+
+

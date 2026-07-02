@@ -11,12 +11,13 @@ const supabaseClient = createClient(SUPABASE_CONFIG.url, SUPABASE_CONFIG.anonKey
 let usersList = [];
 let activeUser = null;
 const userMap = new Map();
-const activeFilters = { notes: 'all', calendar: 'all', todo: 'all', qa: 'all', quiz: 'all' };
+const activeFilters = { notes: 'all', calendar: 'all', todo: 'all', homework: 'all', qa: 'all', quiz: 'all' };
 let filterActiveModule = null;
 
 let currentNotes = [];
 let currentEvents = [];
 let currentTodos = [];
+let currentHomeworks = [];
 let currentQuestions = [];
 let currentSolutions = [];
 let currentQuizzes = [];
@@ -24,6 +25,7 @@ let formQuizOptions = ['', ''];
 let formQuizCorrectIndex = 0;
 let currentQuizAnswers = [];
 let activeTodoSubFilter = 'all';
+let activeHomeworkSubFilter = 'all';
 let activeQaSubFilter = 'all';
 
 
@@ -58,22 +60,26 @@ async function loadDashboardData() {
         await fetchNotes();
         await fetchCalendarEvents();
         await fetchTodos();
+        await fetchHomeworks();
         await fetchQuizzes();
         await fetchQuizAnswers();
 
         const todayStr = getLocalDateString(new Date());
         const todayTodos = currentTodos.filter(t => t.due_date === todayStr && !t.is_completed);
+        const todayHomeworks = currentHomeworks.filter(h => h.due_date === todayStr && !h.is_completed);
         const todayEvents = currentEvents.filter(e => e.event_date === todayStr);
         const todayQuizzes = currentQuizzes.filter(q => getLocalDateString(new Date(q.created_at)) === todayStr);
         const todayNotes = currentNotes.filter(n => getLocalDateString(new Date(n.updated_at)) === todayStr);
 
         document.getElementById('db-count-todo').textContent = todayTodos.length;
+        document.getElementById('db-count-homework').textContent = todayHomeworks.length;
         document.getElementById('db-count-events').textContent = todayEvents.length;
         document.getElementById('db-count-quizzes').textContent = todayQuizzes.length;
         document.getElementById('db-count-notes').textContent = todayNotes.length;
 
         const eventsContainer = document.getElementById('db-focus-events');
         const todosContainer = document.getElementById('db-focus-todos');
+        const homeworksContainer = document.getElementById('db-focus-homework');
 
         if (eventsContainer) {
             if (todayEvents.length === 0) {
@@ -114,6 +120,26 @@ async function loadDashboardData() {
             }
         }
 
+        if (homeworksContainer) {
+            if (todayHomeworks.length === 0) {
+                homeworksContainer.innerHTML = '<div class="empty-state-simple">今天沒有作業任務。</div>';
+            } else {
+                homeworksContainer.innerHTML = todayHomeworks.map(h => `
+                    <div class="focus-item">
+                        <div class="focus-item-content">
+                            <div class="focus-item-title">${h.title}</div>
+                            <div class="focus-item-meta">
+                                ${getSubjectBadgeHtml(h.subject, "padding: 2px 8px; font-size: 11px;")}
+                            </div>
+                        </div>
+                        <button class="btn-icon" onclick="completeHomeworkFromDashboard('${h.id}')" title="標示為完成" style="color: var(--text-secondary); cursor: pointer;">
+                            <i data-lucide="circle" style="width: 20px; height: 20px;"></i>
+                        </button>
+                    </div>
+                `).join('');
+            }
+        }
+
         renderTimetable();
         lucide.createIcons();
     } catch (err) {
@@ -131,6 +157,19 @@ window.completeTodoFromDashboard = async function(todoId) {
         await loadDashboardData();
     } catch (err) {
         console.error("Dashboard complete todo error:", err);
+    }
+};
+
+window.completeHomeworkFromDashboard = async function(homeworkId) {
+    try {
+        const { error } = await supabaseClient
+            .from('homeworks')
+            .update({ is_completed: true })
+            .eq('id', homeworkId);
+        if (error) throw error;
+        await loadDashboardData();
+    } catch (err) {
+        console.error("Dashboard complete homework error:", err);
     }
 };
 
@@ -875,6 +914,25 @@ function bindEvents() {
         openModal('modal-question-form');
     });
 
+    document.getElementById('btn-open-add-homework')?.addEventListener('click', () => {
+        document.getElementById('homework-form').reset();
+        document.getElementById('form-homework-id').value = '';
+        document.getElementById('homework-form-title').textContent = "新增作業事項";
+        clearImagePreview('homework');
+        openModal('modal-homework-form');
+    });
+
+    document.getElementById('search-homework')?.addEventListener('input', renderHomeworks);
+
+    document.querySelectorAll('#homework-sub-filters .sub-filter-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('#homework-sub-filters .sub-filter-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            activeHomeworkSubFilter = btn.getAttribute('data-filter');
+            renderHomeworks();
+        });
+    });
+
     document.getElementById('btn-toggle-full-timetable')?.addEventListener('click', () => {
         showFullTimetable = !showFullTimetable;
         renderTimetable();
@@ -895,6 +953,9 @@ async function loadDataForView(panelId) {
     } else if (panelId === 'panel-todo') {
         await fetchTodos();
         renderTodos();
+    } else if (panelId === 'panel-homework') {
+        await fetchHomeworks();
+        renderHomeworks();
     } else if (panelId === 'panel-qa') {
         await fetchQuestions();
         renderQuestions();
@@ -947,6 +1008,7 @@ function injectUrlInputs() {
         { fileId: 'note-image-file', urlId: 'note-image-url', label: '圖片網址備用方案 (可選)' },
         { fileId: 'event-image-file', urlId: 'event-image-url', label: '圖片網址備用方案 (可選)' },
         { fileId: 'todo-image-file', urlId: 'todo-image-url', label: '圖片網址備用方案 (可選)' },
+        { fileId: 'homework-image-file', urlId: 'homework-image-url', label: '圖片網址備用方案 (可選)' },
         { fileId: 'question-image-file', urlId: 'question-image-url', label: '圖片網址備用方案 (可選)' },
         { fileId: 'new-solution-image-file', urlId: 'new-solution-image-url', label: '圖片網址備用方案 (可選)' },
         { fileId: 'quiz-image-file', urlId: 'quiz-image-url', label: '圖片網址備用方案 (可選)' }
@@ -974,6 +1036,7 @@ function setupPreviewForFileInputs() {
         { fileId: 'note-image-file', previewId: 'note-image-preview', containerId: 'note-image-preview-container' },
         { fileId: 'event-image-file', previewId: 'event-image-preview', containerId: 'event-image-preview-container' },
         { fileId: 'todo-image-file', previewId: 'todo-image-preview', containerId: 'todo-image-preview-container' },
+        { fileId: 'homework-image-file', previewId: 'homework-image-preview', containerId: 'homework-image-preview-container' },
         { fileId: 'question-image-file', previewId: 'question-image-preview', containerId: 'question-image-preview-container' },
         { fileId: 'new-solution-image-file', previewId: 'new-solution-image-preview', containerId: 'new-solution-image-preview-container' },
         { fileId: 'quiz-image-file', previewId: 'quiz-image-preview', containerId: 'quiz-image-preview-container' }
@@ -1005,6 +1068,7 @@ function setupPreviewRemoveButtons() {
         { btnId: 'btn-remove-note-img', previewId: 'note-image-preview', containerId: 'note-image-preview-container', fileId: 'note-image-file', urlId: 'note-image-url' },
         { btnId: 'btn-remove-event-img', previewId: 'event-image-preview', containerId: 'event-image-preview-container', fileId: 'event-image-file', urlId: 'event-image-url' },
         { btnId: 'btn-remove-todo-img', previewId: 'todo-image-preview', containerId: 'todo-image-preview-container', fileId: 'todo-image-file', urlId: 'todo-image-url' },
+        { btnId: 'btn-remove-homework-img', previewId: 'homework-image-preview', containerId: 'homework-image-preview-container', fileId: 'homework-image-file', urlId: 'homework-image-url' },
         { btnId: 'btn-remove-question-img', previewId: 'question-image-preview', containerId: 'question-image-preview-container', fileId: 'question-image-file', urlId: 'question-image-url' },
         { btnId: 'btn-remove-solution-img', previewId: 'new-solution-image-preview', containerId: 'new-solution-image-preview-container', fileId: 'new-solution-image-file', urlId: 'new-solution-image-url' },
         { btnId: 'btn-remove-quiz-img', previewId: 'quiz-image-preview', containerId: 'quiz-image-preview-container', fileId: 'quiz-image-file', urlId: 'quiz-image-url' }
@@ -2881,5 +2945,317 @@ function renderTimetableLegend() {
         </div>
     `;
 }
+
+// =========================================================================
+// 14. Homework Module Control Logic (作業)
+// =========================================================================
+
+async function fetchHomeworks() {
+    try {
+        const { data, error } = await supabaseClient
+            .from('homeworks')
+            .select('*')
+            .order('created_at', { ascending: false });
+        if (error) throw error;
+        currentHomeworks = data || [];
+    } catch (err) {
+        console.error("Fetch homeworks error:", err);
+    }
+}
+
+function renderHomeworks() {
+    const searchVal = document.getElementById('search-homework').value.toLowerCase().trim();
+    const subjectVal = activeFilters.homework;
+    
+    const activeListEl = document.getElementById('homework-active-list');
+    const completedListEl = document.getElementById('homework-completed-list');
+    const activeCountEl = document.getElementById('active-homework-count');
+    const completedCountEl = document.getElementById('completed-homework-count');
+
+    if (!activeListEl || !completedListEl) return;
+
+    // Filter
+    const filtered = currentHomeworks.filter(item => {
+        const matchesSearch = item.title.toLowerCase().includes(searchVal) || 
+                              item.description.toLowerCase().includes(searchVal);
+        const matchesSubject = (subjectVal === 'all') || (item.subject === subjectVal);
+        return matchesSearch && matchesSubject;
+    });
+
+    // Apply sub-filters (today, week, pending, completed)
+    const todayStr = getLocalDateString(new Date());
+    const oneWeekAgo = new Date();
+    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+    
+    const filteredBySub = filtered.filter(item => {
+        if (activeHomeworkSubFilter === 'today') {
+            return item.due_date === todayStr;
+        } else if (activeHomeworkSubFilter === 'week') {
+            if (!item.due_date) return false;
+            const d = new Date(item.due_date);
+            return d >= oneWeekAgo && d <= new Date();
+        } else if (activeHomeworkSubFilter === 'pending') {
+            return !item.is_completed;
+        } else if (activeHomeworkSubFilter === 'completed') {
+            return item.is_completed;
+        }
+        return true;
+    });
+
+    const activeHomeworks = filteredBySub.filter(item => !item.is_completed);
+    const completedHomeworks = filteredBySub.filter(item => item.is_completed);
+
+    if (activeCountEl) activeCountEl.textContent = activeHomeworks.length;
+    if (completedCountEl) completedCountEl.textContent = completedHomeworks.length;
+
+    activeListEl.innerHTML = '';
+    completedListEl.innerHTML = '';
+
+    const createHomeworkCard = (item) => {
+        const author = userMap.get(item.user_id) || "未知使用者";
+        const subjectClass = getSubjectClass(item.subject);
+        const subjectDisplayName = getSubjectDisplayName(item.subject);
+        
+        const card = document.createElement('div');
+        card.className = `todo-card ${subjectClass} ${item.is_completed ? 'completed' : ''}`;
+        card.dataset.id = item.id;
+        
+        const isOverdue = item.due_date && new Date(item.due_date) < new Date() && !item.is_completed;
+        const dueDateHtml = item.due_date 
+            ? `<span class="todo-due-tag ${isOverdue ? 'overdue' : ''}"><i data-lucide="calendar"></i> 截止: ${item.due_date}</span>`
+            : '';
+
+        card.innerHTML = `
+            <div class="todo-card-left">
+                <label class="todo-checkbox-wrapper">
+                    <input type="checkbox" class="todo-checkbox-input" data-id="${item.id}" ${item.is_completed ? 'checked' : ''} />
+                    <span class="todo-checkbox-custom"></span>
+                </label>
+                <div class="todo-content">
+                    <div class="todo-title">${item.title}</div>
+                    <div class="todo-meta">
+                        ${getSubjectBadgeHtml(item.subject)}
+                        <span>建立者：${author}</span>
+                        ${dueDateHtml}
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // Checkbox Toggle immediately
+        const checkbox = card.querySelector('.todo-checkbox-input');
+        checkbox.addEventListener('change', async (e) => {
+            e.stopPropagation();
+            await toggleHomeworkStatus(item.id, checkbox.checked);
+        });
+
+        // Click to open detail modal
+        card.addEventListener('click', () => {
+            openHomeworkDetailModal(item);
+        });
+
+        return card;
+    };
+
+    activeHomeworks.forEach(item => activeListEl.appendChild(createHomeworkCard(item)));
+    completedHomeworks.forEach(item => completedListEl.appendChild(createHomeworkCard(item)));
+
+    lucide.createIcons();
+}
+
+async function toggleHomeworkStatus(id, is_completed) {
+    try {
+        const { error } = await supabaseClient
+            .from('homeworks')
+            .update({ is_completed })
+            .eq('id', id);
+        if (error) throw error;
+        await fetchHomeworks();
+        renderHomeworks();
+        
+        const activeTab = document.querySelector('.tab-btn.active');
+        if (activeTab && activeTab.getAttribute('data-tab') === 'dashboard') {
+            await loadDashboardData();
+        }
+    } catch (err) {
+        console.error("Toggle homework status failed:", err);
+        alert("操作失敗，請稍後再試！");
+    }
+}
+
+// Open Detail Modal
+function openHomeworkDetailModal(item) {
+    const modal = document.getElementById('modal-homework-detail');
+    if (!modal) return;
+
+    const subjectBadge = document.getElementById('detail-homework-subject');
+    const titleEl = document.getElementById('detail-homework-title');
+    const authorAvatar = document.getElementById('detail-homework-avatar');
+    const authorName = document.getElementById('detail-homework-author');
+    const dueEl = document.getElementById('detail-homework-due');
+    const statusEl = document.getElementById('detail-homework-status');
+    const imgEl = document.getElementById('detail-homework-image');
+    const descEl = document.getElementById('detail-homework-desc');
+
+    const author = userMap.get(item.user_id) || "未知使用者";
+    
+    if (subjectBadge) {
+        subjectBadge.className = `subject-badge ${getSubjectClass(item.subject)}`;
+        subjectBadge.textContent = getSubjectDisplayName(item.subject);
+    }
+    if (titleEl) titleEl.textContent = item.title;
+    if (authorAvatar) authorAvatar.textContent = author.substring(0, 1).toUpperCase();
+    if (authorName) authorName.textContent = author;
+    if (dueEl) dueEl.textContent = item.due_date ? `截止日期: ${item.due_date}` : '無截止日期';
+    
+    if (statusEl) {
+        statusEl.className = item.is_completed ? 'status-badge completed' : 'status-badge pending';
+        statusEl.textContent = item.is_completed ? '已完成' : '進行中';
+    }
+
+    if (imgEl) {
+        if (item.image_url) {
+            imgEl.src = item.image_url;
+            imgEl.style.display = 'block';
+        } else {
+            imgEl.style.display = 'none';
+        }
+    }
+
+    if (descEl) {
+        descEl.innerHTML = item.description ? marked.parse(item.description) : '<p style="color: var(--text-muted);">無詳細說明內容。</p>';
+    }
+
+    // Edit/Delete buttons visibility check
+    const isOwner = activeUser && activeUser.id === item.user_id;
+    const editBtn = document.getElementById('btn-edit-homework');
+    const deleteBtn = document.getElementById('btn-delete-homework');
+
+    if (editBtn) {
+        editBtn.dataset.id = item.id;
+        editBtn.style.display = isOwner ? '' : 'none';
+    }
+    if (deleteBtn) {
+        deleteBtn.dataset.id = item.id;
+        deleteBtn.style.display = isOwner ? '' : 'none';
+    }
+
+    openModal('modal-homework-detail');
+}
+
+// Save Homework
+document.getElementById('btn-save-homework')?.addEventListener('click', async () => {
+    const homeworkId = document.getElementById('form-homework-id').value || null;
+    const title = document.getElementById('homework-title').value.trim();
+    const subject = document.getElementById('homework-subject').value;
+    const due_date = document.getElementById('homework-due-date').value || null;
+    const description = document.getElementById('homework-desc').value.trim();
+
+    if (!title) {
+        alert("請輸入作業名稱！");
+        return;
+    }
+
+    const fileInput = document.getElementById('homework-image-file');
+    const urlInput = document.getElementById('homework-image-url');
+
+    let existingUrl = null;
+    if (homeworkId) {
+        const item = currentHomeworks.find(x => x.id === homeworkId);
+        if (item) existingUrl = item.image_url;
+    }
+
+    let imageUrl = getFormImageUrl('homework-image-file', 'homework-image-preview', 'homework-image-url', existingUrl);
+    if (imageUrl === 'upload') {
+        imageUrl = await uploadImage(fileInput, urlInput);
+    }
+
+    let creatorId = activeUser ? activeUser.id : null;
+    if (homeworkId) {
+        const item = currentHomeworks.find(x => x.id === homeworkId);
+        if (item) creatorId = item.user_id;
+    }
+
+    const payload = {
+        subject,
+        title,
+        description,
+        due_date,
+        image_url: imageUrl,
+        user_id: creatorId,
+        is_completed: homeworkId ? (currentHomeworks.find(h => h.id === homeworkId)?.is_completed || false) : false
+    };
+    if (homeworkId) {
+        payload.id = homeworkId;
+    }
+
+    try {
+        const { error } = await supabaseClient.from('homeworks').upsert(payload);
+        if (error) throw error;
+
+        closeModal('modal-homework-form');
+        document.getElementById('homework-form').reset();
+        clearImagePreview('homework');
+        await fetchHomeworks();
+        renderHomeworks();
+    } catch (err) {
+        console.error("Save homework error:", err);
+        alert("儲存作業失敗，請確保 homeworks 資料表已建立！");
+    }
+});
+
+// Edit Homework
+document.getElementById('btn-edit-homework')?.addEventListener('click', () => {
+    const id = document.getElementById('btn-edit-homework').dataset.id;
+    const item = currentHomeworks.find(x => x.id === id);
+    if (!item) return;
+    
+    closeModal('modal-homework-detail');
+    
+    document.getElementById('homework-form-title').textContent = "編輯作業事項";
+    document.getElementById('form-homework-id').value = item.id;
+    document.getElementById('homework-title').value = item.title;
+    document.getElementById('homework-subject').value = item.subject;
+    document.getElementById('homework-due-date').value = item.due_date || "";
+    document.getElementById('homework-desc').value = item.description || "";
+    
+    const preview = document.getElementById('homework-image-preview');
+    const previewContainer = document.getElementById('homework-image-preview-container');
+    const urlInput = document.getElementById('homework-image-url');
+
+    if (urlInput) urlInput.value = item.image_url || '';
+
+    if (item.image_url) {
+        if (preview) preview.src = item.image_url;
+        if (previewContainer) previewContainer.style.display = 'block';
+    } else {
+        if (preview) preview.src = '';
+        if (previewContainer) previewContainer.style.display = 'none';
+    }
+    
+    openModal('modal-homework-form');
+});
+
+// Delete Homework
+document.getElementById('btn-delete-homework')?.addEventListener('click', async () => {
+    const id = document.getElementById('btn-delete-homework').dataset.id;
+    if (!id || !confirm("確定要刪除這項作業嗎？")) return;
+    
+    try {
+        const { error } = await supabaseClient
+            .from('homeworks')
+            .delete()
+            .eq('id', id);
+        if (error) throw error;
+        
+        closeModal('modal-homework-detail');
+        await fetchHomeworks();
+        renderHomeworks();
+    } catch (err) {
+        console.error("Delete homework error:", err);
+        alert("刪除失敗！");
+    }
+});
+
 
 

@@ -64,6 +64,9 @@
       <button id="btn-tab-todo" class="tab-btn" data-tab="todo">
         <i data-lucide="check-square"></i> 代辦事項
       </button>
+      <button id="btn-tab-homework" class="tab-btn" data-tab="homework">
+        <i data-lucide="clipboard-list"></i> 學習作業
+      </button>
       <button id="btn-tab-qa" class="tab-btn" data-tab="qa">
         <i data-lucide="message-circle"></i> 學科問答
       </button>
@@ -89,6 +92,11 @@
           <div class="db-card-icon"><i data-lucide="check-square"></i></div>
           <div class="db-card-value" id="db-count-todo">0</div>
           <div class="db-card-label">今日待辦</div>
+        </div>
+        <div class="dashboard-card theme-homework">
+          <div class="db-card-icon"><i data-lucide="clipboard-list"></i></div>
+          <div class="db-card-value" id="db-count-homework">0</div>
+          <div class="db-card-label">今日作業</div>
         </div>
         <div class="dashboard-card theme-calendar">
           <div class="db-card-icon"><i data-lucide="calendar"></i></div>
@@ -118,6 +126,12 @@
           <h3 class="focus-title"><i data-lucide="check-square"></i> 今日待辦焦點</h3>
           <div id="db-focus-todos" class="focus-list-container">
             <div class="empty-state-simple">今天沒有待辦任務。</div>
+          </div>
+        </div>
+        <div class="focus-column">
+          <h3 class="focus-title"><i data-lucide="clipboard-list"></i> 今日作業焦點</h3>
+          <div id="db-focus-homework" class="focus-list-container">
+            <div class="empty-state-simple">今天沒有作業任務。</div>
           </div>
         </div>
       </div>
@@ -254,6 +268,52 @@
             已完成的任務 <span id="completed-todo-count">0</span>
           </div>
           <div id="todo-completed-list" class="todo-list">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== Homework Tab Panel ==================== -->
+    <section id="panel-homework" class="tab-panel">
+      <div class="action-bar">
+        <div class="search-wrapper">
+          <i data-lucide="search" class="search-icon"></i>
+          <input type="text" id="search-homework" class="search-input" placeholder="搜尋作業..." />
+        </div>
+        <button id="btn-filter-homework" class="btn btn-secondary btn-filter" data-module="homework"><i data-lucide="filter"></i> <span class="filter-label">篩選</span></button>
+        <button id="btn-open-add-homework" class="btn btn-primary">
+          <i data-lucide="plus"></i> 新增作業
+        </button>
+      </div>
+      <div class="sub-filter-bar" id="homework-sub-filters">
+        <button class="sub-filter-btn active" data-filter="all">全部</button>
+        <button class="sub-filter-btn" data-filter="today">今天</button>
+        <button class="sub-filter-btn" data-filter="week">本週</button>
+        <button class="sub-filter-btn" data-filter="pending">未完成</button>
+        <button class="sub-filter-btn" data-filter="completed">已完成</button>
+      </div>
+      
+      <!-- Homework Container -->
+      <div class="todo-container">
+        <!-- Active Section -->
+        <div>
+          <div class="todo-section-title">
+            <i data-lucide="circle" style="color: var(--primary-color); width: 16px; height: 16px;"></i>
+            未完成作業 <span id="active-homework-count">0</span>
+          </div>
+          <div id="homework-active-list" class="todo-list">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+        
+        <!-- Completed Section -->
+        <div style="margin-top: 10px;">
+          <div class="todo-section-title">
+            <i data-lucide="check-circle" style="color: var(--color-math); width: 16px; height: 16px;"></i>
+            已完成作業 <span id="completed-homework-count">0</span>
+          </div>
+          <div id="homework-completed-list" class="todo-list">
             <!-- Populated by JS -->
           </div>
         </div>
@@ -671,6 +731,116 @@
           <button type="button" id="btn-delete-todo" class="btn btn-danger"><i data-lucide="trash-2"></i> 刪除</button>
         </div>
         <button type="button" class="btn btn-secondary" onclick="closeModal('modal-todo-detail')">關閉</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5b. Add/Edit Homework Form Modal -->
+  <div id="modal-homework-form" class="modal-overlay">
+    <div class="modal-container">
+      <div class="modal-header">
+        <h3 id="homework-form-title" class="modal-title">新增作業事項</h3>
+        <button class="btn-close" onclick="closeModal('modal-homework-form')"><i data-lucide="x"></i></button>
+      </div>
+      <div class="modal-body">
+        <form id="homework-form" onsubmit="return false;">
+          <input type="hidden" id="form-homework-id" />
+          <div class="form-row-2">
+            <div class="form-group">
+              <label for="homework-title" class="form-label">作業名稱</label>
+              <input type="text" id="homework-title" class="form-control" placeholder="請輸入標題..." required />
+            </div>
+            <div class="form-group">
+              <label for="homework-subject" class="form-label">科目分類</label>
+              <select id="homework-subject" class="form-control">
+                <option value="" selected>無學科關聯</option>
+                <option value="國文">國文</option>
+                <option value="英文">英文</option>
+                <option value="數學">數學</option>
+                <option value="物理">物理</option>
+                <option value="化學">化學</option>
+                <option value="生物">生物</option>
+                <option value="地科">地科</option>
+                <option value="歷史">歷史</option>
+                <option value="地理">地理</option>
+                <option value="公民">公民</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="homework-due-date" class="form-label">繳交期限 (截止日期)</label>
+            <input type="date" id="homework-due-date" class="form-control" />
+          </div>
+          <div class="form-group">
+            <label for="homework-desc" class="form-label">作業詳細說明</label>
+            <textarea id="homework-desc" class="form-control" placeholder="請輸入作業詳細說明內容..."></textarea>
+          </div>
+          
+          <!-- Image upload Widget -->
+          <div class="form-group">
+            <label class="form-label">參考圖片/題目截圖</label>
+            <div class="file-upload-widget">
+              <input type="file" id="homework-image-file" class="file-upload-input" accept="image/*" />
+              <div class="file-upload-info">
+                <i data-lucide="image"></i>
+                <span>點擊上傳截圖</span>
+              </div>
+            </div>
+            <div class="image-preview-container" id="homework-image-preview-container">
+              <img id="homework-image-preview" src="" alt="Image Preview" />
+              <button type="button" class="btn-remove-image" id="btn-remove-homework-img"><i data-lucide="trash-2"></i></button>
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeModal('modal-homework-form')">取消</button>
+        <button type="button" id="btn-save-homework" class="btn btn-primary">儲存作業</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 6b. View Homework Detail Modal -->
+  <div id="modal-homework-detail" class="modal-overlay">
+    <div class="modal-container">
+      <div class="modal-header">
+        <h3 class="modal-title">作業詳情</h3>
+        <button class="btn-close" onclick="closeModal('modal-homework-detail')"><i data-lucide="x"></i></button>
+      </div>
+      <div class="modal-body">
+        <div class="detail-header">
+          <span id="detail-homework-subject" class="subject-badge general">科目標籤</span>
+          <h2 id="detail-homework-title" class="detail-title">作業載入中...</h2>
+          <div class="detail-meta-bar">
+            <div class="detail-author">
+              <div class="author-avatar" id="detail-homework-avatar">H</div>
+              <span id="detail-homework-author">指派人</span>
+            </div>
+            <div class="detail-meta-right">
+              <div class="detail-meta-item">
+                <i data-lucide="calendar"></i>
+                <span id="detail-homework-due">截止日期</span>
+              </div>
+              <div class="detail-meta-item">
+                <i data-lucide="activity"></i>
+                <span id="detail-homework-status">狀態</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <img id="detail-homework-image" class="detail-image" src="" alt="作業圖片" style="display: none;" />
+        
+        <div id="detail-homework-desc" class="markdown-body">
+          <!-- Homework description -->
+        </div>
+      </div>
+      <div class="modal-footer">
+        <div style="margin-right: auto;">
+          <button type="button" id="btn-edit-homework" class="btn btn-secondary"><i data-lucide="edit-2"></i> 編輯</button>
+          <button type="button" id="btn-delete-homework" class="btn btn-danger"><i data-lucide="trash-2"></i> 刪除</button>
+        </div>
+        <button type="button" class="btn btn-secondary" onclick="closeModal('modal-homework-detail')">關閉</button>
       </div>
     </div>
   </div>

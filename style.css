@@ -71,6 +71,18 @@ body.theme-qa {
   --primary-glow: rgba(217, 119, 6, 0.12);
 }
 
+body.theme-quiz {
+  --primary-color: #db2777;      /* Pastel Rose Primary */
+  --primary-light: #fce7f3;      /* Pastel Rose Pill Bg */
+  --primary-glow: rgba(219, 39, 119, 0.12);
+}
+
+body.theme-homework {
+  --primary-color: #0284c7;      /* Pastel Blue Primary */
+  --primary-light: #e0f2fe;      /* Pastel Blue Pill Bg */
+  --primary-glow: rgba(2, 132, 199, 0.12);
+}
+
 /* --- Base Reset --- */
 * {
   box-sizing: border-box;
