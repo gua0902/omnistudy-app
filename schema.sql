@@ -44,6 +44,7 @@ CREATE TABLE IF NOT EXISTS public.todos (
     description TEXT NOT NULL,                 -- 任務詳細說明 (支援 Markdown)
     image_url TEXT,                            -- 參考圖片網址 (可選)
     is_completed BOOLEAN DEFAULT false NOT NULL, -- 是否完成
+    is_private BOOLEAN DEFAULT false NOT NULL,  -- 是否為私人待辦 (可選)
     due_date DATE,                             -- 截止日期 (可選)
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );

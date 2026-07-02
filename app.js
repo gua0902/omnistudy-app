@@ -114,6 +114,7 @@ async function loadDashboardData() {
             }
         }
 
+        renderTimetable();
         lucide.createIcons();
     } catch (err) {
         console.error("Error loading dashboard data:", err);
@@ -654,6 +655,7 @@ function bindEvents() {
             document.body.className = `theme-${target}`;
             await loadDataForView(`panel-${target}`);
         }
+        renderTimetable();
     });
 
     // Logo title click to go back to Dashboard
@@ -677,6 +679,7 @@ function bindEvents() {
             const target = activeTab.getAttribute('data-tab');
             await loadDataForView(`panel-${target}`);
         }
+        renderTimetable();
     });
 
     // Add New User confirmation
@@ -858,6 +861,8 @@ function bindEvents() {
         document.getElementById('todo-form').reset();
         document.getElementById('form-todo-id').value = '';
         document.getElementById('todo-form-title').textContent = "新增待辦事項";
+        const isPrivateCheckbox = document.getElementById('todo-is-private');
+        if (isPrivateCheckbox) isPrivateCheckbox.checked = false;
         clearImagePreview('todo');
         openModal('modal-todo-form');
     });
@@ -870,7 +875,10 @@ function bindEvents() {
         openModal('modal-question-form');
     });
 
-    
+    document.getElementById('btn-toggle-full-timetable')?.addEventListener('click', () => {
+        showFullTimetable = !showFullTimetable;
+        renderTimetable();
+    });
 }
 
 // View Loader Router
@@ -1544,6 +1552,11 @@ function renderTodos() {
 
     // Filter
     const filtered = currentTodos.filter(item => {
+        // Private todos can only be seen by the creator
+        if (item.is_private && (!activeUser || item.user_id !== activeUser.id)) {
+            return false;
+        }
+
         const matchesSearch = item.title.toLowerCase().includes(searchVal) || 
                               item.description.toLowerCase().includes(searchVal);
         const matchesSubject = (subjectVal === 'all') || (item.subject === subjectVal);
@@ -1572,6 +1585,9 @@ function renderTodos() {
         const dueDateHtml = item.due_date 
             ? `<span class="todo-due-tag ${isOverdue ? 'overdue' : ''}"><i data-lucide="calendar"></i> 截止: ${item.due_date}</span>`
             : '';
+        const privateTag = item.is_private 
+            ? `<span style="color: var(--text-muted); font-size: 11px; font-weight: 500; display: inline-flex; align-items: center; gap: 2px;"><i data-lucide="lock" style="width: 11px; height: 11px; margin-bottom: 2px;"></i> 私人</span>`
+            : '';
 
         card.innerHTML = `
             <div class="todo-card-left">
@@ -1585,6 +1601,7 @@ function renderTodos() {
                         ${getSubjectBadgeHtml(item.subject)}
                         <span>建立者：${author}</span>
                         ${dueDateHtml}
+                        ${privateTag}
                     </div>
                 </div>
             </div>
@@ -1669,13 +1686,22 @@ document.getElementById('btn-save-todo')?.addEventListener('click', async () => 
         imageUrl = await uploadImage(fileInput, urlInput);
     }
 
+    const is_private = document.getElementById('todo-is-private')?.checked || false;
+
+    let creatorId = activeUser ? activeUser.id : null;
+    if (todoId) {
+        const item = currentTodos.find(x => x.id === todoId);
+        if (item) creatorId = item.user_id;
+    }
+
     const payload = {
         subject,
         title,
         description,
         due_date,
+        is_private,
         image_url: imageUrl,
-        user_id: activeUser ? activeUser.id : null,
+        user_id: creatorId,
         is_completed: todoId ? (currentTodos.find(t => t.id === todoId)?.is_completed || false) : false
     };
     if (todoId) {
@@ -2368,6 +2394,8 @@ document.getElementById('btn-edit-todo')?.addEventListener('click', () => {
     document.getElementById('todo-subject').value = item.subject;
     document.getElementById('todo-due-date').value = item.due_date || "";
     document.getElementById('todo-desc').value = item.description || "";
+    const isPrivateCheckbox = document.getElementById('todo-is-private');
+    if (isPrivateCheckbox) isPrivateCheckbox.checked = item.is_private || false;
     
     const preview = document.getElementById('todo-image-preview');
     const previewContainer = document.getElementById('todo-image-preview-container');
@@ -2730,4 +2758,128 @@ async function sendNoteComment(noteId) {
         alert("發送留言失敗，請確保 note_comments 資料表已成功建立！");
     }
 }
+
+// =========================================================================
+// 13. Weekly Timetable Rendering Logic (课表)
+// =========================================================================
+let showFullTimetable = false;
+
+const TIMETABLE_DATA = {
+    "女顏木秦": { "一": "物 岳", "二": "", "三": "英 tw", "四": "", "五": "數 莊", "六": "化 徐+必生", "日": "" },
+    "松鼠": { "一": "化 江", "二": "", "三": "英 tw", "四": "", "五": "", "六": "", "日": "物 岳" },
+    "青花魚": { "一": "", "二": "", "三": "", "四": "", "五": "", "六": "", "日": "" },
+    "gua": { "一": "物 岳", "二": "", "三": "英 tw", "四": "數 莊", "五": "", "六": "化 徐+選生", "日": "" },
+    "34": { "一": "化 江", "二": "", "三": "英 tw", "四": "", "五": "", "六": "數 小+蔡", "日": "物 岳" }
+};
+
+const TEACHER_LEGEND = {
+    "英": "twiggy (英文)",
+    "數": "莊青原 / 小青原 / 蔡青原 (數學)",
+    "生": "殷琴 / 皓佑 (生物)",
+    "物": "岳霖 (物理)",
+    "化": "江騏 / 徐杰 (化學)"
+};
+
+function renderTimetable() {
+    const titleEl = document.getElementById('timetable-user-title');
+    const areaEl = document.getElementById('timetable-display-area');
+    const toggleBtnTextEl = document.getElementById('btn-toggle-full-timetable-text');
+    
+    if (!areaEl) return;
+    
+    const userName = activeUser ? activeUser.name : null;
+    
+    if (showFullTimetable) {
+        if (titleEl) titleEl.textContent = "全員每週課表";
+        if (toggleBtnTextEl) toggleBtnTextEl.textContent = "查看個人課表";
+        
+        let tbodyHtml = '';
+        Object.keys(TIMETABLE_DATA).forEach(user => {
+            const sched = TIMETABLE_DATA[user];
+            const isCurrentUser = (user === userName);
+            const rowClass = isCurrentUser ? 'class="current-user-row"' : '';
+            tbodyHtml += `
+                <tr ${rowClass}>
+                    <td style="font-weight: 700; background: var(--bg-input);">${user}</td>
+                    <td>${sched["一"] || '--'}</td>
+                    <td>${sched["二"] || '--'}</td>
+                    <td>${sched["三"] || '--'}</td>
+                    <td>${sched["四"] || '--'}</td>
+                    <td>${sched["五"] || '--'}</td>
+                    <td>${sched["六"] || '--'}</td>
+                    <td>${sched["日"] || '--'}</td>
+                </tr>
+            `;
+        });
+        
+        areaEl.innerHTML = `
+            <table class="full-timetable-table">
+                <thead>
+                    <tr>
+                        <th>學生</th>
+                        <th>一</th>
+                        <th>二</th>
+                        <th>三</th>
+                        <th>四</th>
+                        <th>五</th>
+                        <th>六</th>
+                        <th>日</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${tbodyHtml}
+                </tbody>
+            </table>
+            ${renderTimetableLegend()}
+        `;
+    } else {
+        const displayName = userName || "未登入";
+        if (titleEl) titleEl.textContent = `【${displayName}】的每週課表`;
+        if (toggleBtnTextEl) toggleBtnTextEl.textContent = "查看全員課表";
+        
+        const schedule = TIMETABLE_DATA[displayName] || { "一": "", "二": "", "三": "", "四": "", "五": "", "六": "", "日": "" };
+        const days = ["一", "二", "三", "四", "五", "六", "日"];
+        
+        let gridHtml = '';
+        days.forEach(day => {
+            const course = schedule[day];
+            const courseClass = course ? 'weekly-day-course' : 'weekly-day-course empty';
+            const courseText = course || '--';
+            gridHtml += `
+                <div class="weekly-day-card">
+                    <div class="weekly-day-name">星期${day}</div>
+                    <div class="${courseClass}">${courseText}</div>
+                </div>
+            `;
+        });
+        
+        areaEl.innerHTML = `
+            <div class="weekly-schedule-grid">
+                ${gridHtml}
+            </div>
+            ${renderTimetableLegend()}
+        `;
+    }
+    
+    // Create icons for the legend
+    lucide.createIcons();
+}
+
+function renderTimetableLegend() {
+    let legendItemsHtml = '';
+    Object.keys(TEACHER_LEGEND).forEach(key => {
+        legendItemsHtml += `
+            <span style="background: var(--bg-input); padding: 4px 10px; border-radius: 8px; border: var(--border-thin);">
+                <strong>${key}：</strong>${TEACHER_LEGEND[key]}
+            </span>
+        `;
+    });
+    return `
+        <div class="timetable-legend">
+            <div class="legend-title"><i data-lucide="info" style="width: 14px; height: 14px; display: inline-block; vertical-align: middle; margin-right: 4px;"></i>師資對照表</div>
+            <div class="legend-items">${legendItemsHtml}</div>
+        </div>
+    `;
+}
+
 

@@ -2444,4 +2444,111 @@ textarea.form-control {
   padding: 16px 0;
 }
 
+/* =========================================================================
+   Weekly Timetable Styles
+   ========================================================================= */
+.timetable-grid-wrapper {
+  overflow-x: auto;
+  width: 100%;
+}
+
+.weekly-schedule-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(120px, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.weekly-day-card {
+  background: var(--bg-input);
+  border: var(--border-thin);
+  border-radius: var(--radius-input);
+  padding: 12px;
+  text-align: center;
+  transition: var(--transition-smooth);
+}
+
+.weekly-day-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-hover);
+  border-color: var(--primary-color);
+}
+
+.weekly-day-name {
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  padding-bottom: 4px;
+}
+
+.weekly-day-course {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--primary-color);
+  min-height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  padding: 4px 8px;
+}
+
+.weekly-day-course.empty {
+  color: var(--text-muted);
+  font-weight: 400;
+  font-size: 13px;
+}
+
+/* Full Timetable Table */
+.full-timetable-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+  font-size: 14px;
+}
+
+.full-timetable-table th,
+.full-timetable-table td {
+  border: var(--border-thin);
+  padding: 12px;
+  text-align: center;
+}
+
+.full-timetable-table th {
+  background: var(--bg-input);
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.full-timetable-table tr.current-user-row {
+  background: var(--primary-light) !important;
+  font-weight: 600;
+}
+
+/* Legend block */
+.timetable-legend {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: var(--border-thin);
+  font-size: 12px;
+  color: var(--text-secondary);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.legend-title {
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.legend-items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+
 
