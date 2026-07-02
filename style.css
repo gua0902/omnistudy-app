@@ -1716,7 +1716,7 @@ textarea.form-control {
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 4px 16px;
+    padding: 4px 10px;
     border-radius: var(--radius-pill);
     transition: var(--transition-smooth);
     color: var(--text-secondary);
